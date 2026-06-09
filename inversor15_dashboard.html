@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DelInversor — DI-Z4P9T6</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --verde: #2C623F;
+    --verde2: #1e4a2e;
+    --verde3: #3d7a54;
+    --verde-light: #e8f2ec;
+    --dorado: #F5C842;
+    --dorado2: #e6b830;
+    --bg: #f4f6f3;
+    --card: #ffffff;
+    --text: #1a1a1a;
+    --muted: #5a6a5f;
+    --border: #d4e0d8;
+    --font: 'Montserrat', sans-serif;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--verde);
+    padding: 20px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  }
+  .header-left { display: flex; flex-direction: column; gap: 3px; }
+  .brand {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+  }
+  .inv-name {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.3px;
+  }
+  .header-controls { display: flex; align-items: center; gap: 12px; }
+
+  .lang-toggle {
+    display: flex;
+    border: 1.5px solid rgba(255,255,255,0.25);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .lang-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.55);
+    font-family: var(--font);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+  }
+  .lang-btn.active {
+    background: var(--dorado);
+    color: var(--verde2);
+  }
+  .lang-btn:not(.active):hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+  .month-sel {
+    background: rgba(255,255,255,0.12);
+    border: 1.5px solid rgba(255,255,255,0.25);
+    border-radius: 8px;
+    color: #fff;
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 14px;
+    cursor: pointer;
+    outline: none;
+    transition: background 0.2s;
+    appearance: none;
+    padding-right: 28px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.7)' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+  }
+  .month-sel option { background: var(--verde2); color: #fff; }
+  .month-sel:hover { background-color: rgba(255,255,255,0.18); }
+
+  /* MAIN */
+  .main { padding: 24px 32px; flex: 1; }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  /* METRIC CARDS */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .metric-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--verde);
+  }
+  .metric-card.highlight::before { background: var(--dorado); }
+  .metric-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .metric-value {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--verde);
+    letter-spacing: -0.5px;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .metric-sub-label {
+    font-size: 10px;
+    color: var(--muted);
+    font-weight: 500;
+    margin-top: 10px;
+    margin-bottom: 3px;
+  }
+  .metric-sub-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .badge {
+    display: inline-block;
+    background: var(--dorado);
+    color: var(--verde2);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
+  }
+  .badge.green { background: var(--verde-light); color: var(--verde2); }
+
+  /* TWO COL */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  /* CARDS */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  /* CHARTS */
+  .chart-wrap { position: relative; width: 100%; }
+
+  /* PIE */
+  .pie-area {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    margin-top: 8px;
+  }
+  .pie-canvas-wrap { position: relative; width: 150px; height: 150px; flex-shrink: 0; }
+  .legend { display: flex; flex-direction: column; gap: 14px; }
+  .legend-item { display: flex; align-items: center; gap: 10px; }
+  .legend-dot {
+    width: 13px; height: 13px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .legend-name { font-size: 12px; font-weight: 600; color: var(--text); }
+  .legend-pct { font-size: 18px; font-weight: 700; color: var(--verde); line-height: 1; }
+  .legend-val { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+  /* LINE LEGEND */
+  .line-legend {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 12px;
+  }
+  .line-legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); font-weight: 500; }
+  .line-swatch { width: 24px; height: 3px; border-radius: 2px; flex-shrink: 0; }
+  .line-swatch.dashed {
+    background: repeating-linear-gradient(90deg, var(--verde) 0, var(--verde) 5px, transparent 5px, transparent 9px);
+    height: 2px;
+  }
+
+  /* FUND TABLES */
+  .fund-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 4px;
+  }
+  .fund-table td {
+    padding: 8px 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .fund-table tr:last-child td { border-bottom: none; }
+  .fund-table .td-label { color: var(--muted); font-weight: 500; }
+  .fund-table .td-val { text-align: right; font-weight: 600; color: var(--text); }
+  .fund-table .td-val.total { color: var(--verde); font-size: 15px; font-weight: 700; }
+  .fund-table .td-val.pos { color: #2C623F; }
+  .fund-table .td-val.neg { color: #c0392b; }
+  .fund-table .td-val.rent-badge {
+    text-align: right;
+  }
+
+  .comment-box {
+    margin-top: 12px;
+    background: var(--verde-light);
+    border-left: 3px solid var(--verde);
+    border-radius: 0 8px 8px 0;
+    padding: 10px 14px;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.6;
+    display: none;
+  }
+
+  /* FOOTER */
+  .footer {
+    background: var(--verde);
+    padding: 12px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+  }
+  .footer-brand {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+  }
+  .footer-date {
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    font-weight: 500;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+    .two-col { grid-template-columns: 1fr; }
+    .main { padding: 16px 16px; }
+    .header { padding: 16px 20px; }
+  }
+  @media (max-width: 500px) {
+    .metrics-grid { grid-template-columns: 1fr; }
+    .header-controls { flex-direction: column; gap: 8px; align-items: flex-end; }
+    .inv-name { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <span class="brand">DelInversor</span>
+    <span class="inv-name">DI-Z4P9T6</span>
+  </div>
+  <div class="header-controls">
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('es')">ES</button>
+      <button class="lang-btn" onclick="setLang('en')">EN</button>
+    </div>
+    <select class="month-sel" id="month-sel" onchange="render()">
+      <option value="abr.-26">Abril 2026</option>
+      <option value="may.-26" selected>Mayo 2026</option>
+    </select>
+  </div>
+</header>
+
+<main class="main">
+
+  <p class="section-label" id="lbl-resumen">Resumen del mes</p>
+
+  <div class="metrics-grid">
+    <div class="metric-card highlight">
+      <div class="metric-label" id="lbl-capital">Capital total</div>
+      <div class="metric-value" id="val-capital">—</div>
+      <div class="metric-sub-label" id="lbl-invertido">Capital invertido</div>
+      <div class="metric-sub-value" id="val-invertido">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label" id="lbl-rend-mes">Rendimientos del mes</div>
+      <div class="metric-value" id="val-rend-mes">—</div>
+      <div><span class="badge" id="val-rend-pct">—</span></div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label" id="lbl-ingresos">Ingresos</div>
+      <div class="metric-value" id="val-ingresos">—</div>
+      <div class="metric-sub-label" id="lbl-egresos">Egresos</div>
+      <div class="metric-sub-value" id="val-egresos">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label" id="lbl-rend-total">Rendimiento total histórico</div>
+      <div class="metric-value" id="val-rend-total">—</div>
+      <div class="metric-sub-label" id="lbl-cierre-ant">Cierre anterior</div>
+      <div class="metric-sub-value" id="val-cierre-ant">—</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <p class="section-label" id="lbl-evolucion">Evolución del capital</p>
+      <div class="line-legend">
+        <div class="line-legend-item">
+          <div class="line-swatch" style="background:#F5C842"></div>
+          <span id="lbl-legend-total">Capital total</span>
+        </div>
+        <div class="line-legend-item">
+          <div class="line-swatch dashed"></div>
+          <span id="lbl-legend-inv">Capital invertido</span>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:200px">
+        <canvas id="lineChart" role="img" aria-label="Evolución del capital total e invertido por mes"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <p class="section-label" id="lbl-diversificacion">Diversificación de la cartera</p>
+      <div class="pie-area">
+        <div class="pie-canvas-wrap">
+          <canvas id="pieChart" role="img" aria-label="Diversificación de cartera por tipo de activo"></canvas>
+        </div>
+        <div class="legend" id="pie-legend"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <p class="section-label" id="lbl-renta-fija">Fondo Renta Fija</p>
+      <table class="fund-table" id="tbl-rf"></table>
+      <div class="comment-box" id="comment-rf"></div>
+    </div>
+    <div class="card">
+      <p class="section-label" id="lbl-acciones">Acciones KT</p>
+      <table class="fund-table" id="tbl-kt"></table>
+      <div class="comment-box" id="comment-kt"></div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <span class="footer-brand">DelInversor</span>
+  <span class="footer-date" id="footer-date">Mayo 2026</span>
+</footer>
+
+<script>
+const T = {
+  es: {
+    resumen: 'Resumen del mes',
+    capital: 'Capital total',
+    invertido: 'Capital invertido',
+    rendMes: 'Rendimientos del mes',
+    ingresos: 'Ingresos',
+    egresos: 'Egresos',
+    rendTotal: 'Rendimiento total histórico',
+    cierreAnt: 'Cierre anterior',
+    evolucion: 'Evolución del capital',
+    legendTotal: 'Capital total',
+    legendInv: 'Capital invertido',
+    diversificacion: 'Diversificación de la cartera',
+    rentaFija: 'Fondo Renta Fija',
+    acciones: 'Acciones KT',
+    filaCierreAnt: 'Cierre mes anterior',
+    filaRend: 'Rendimientos',
+    filaIngresos: 'Ingresos',
+    filaEgresos: 'Egresos',
+    filaComisiones: 'Comisiones',
+    filaCapital: 'Capital actual',
+    filaRentabilidad: 'Rentabilidad',
+    meses: { 'abr.-26': 'Abril 2026', 'may.-26': 'Mayo 2026' }
+  },
+  en: {
+    resumen: 'Monthly summary',
+    capital: 'Total capital',
+    invertido: 'Invested capital',
+    rendMes: 'Monthly returns',
+    ingresos: 'Deposits',
+    egresos: 'Withdrawals',
+    rendTotal: 'Total historical return',
+    cierreAnt: 'Previous close',
+    evolucion: 'Capital evolution',
+    legendTotal: 'Total capital',
+    legendInv: 'Invested capital',
+    diversificacion: 'Portfolio allocation',
+    rentaFija: 'Fixed Income Fund',
+    acciones: 'KT Equities',
+    filaCierreAnt: 'Previous close',
+    filaRend: 'Returns',
+    filaIngresos: 'Deposits',
+    filaEgresos: 'Withdrawals',
+    filaComisiones: 'Fees',
+    filaCapital: 'Current capital',
+    filaRentabilidad: 'Yield',
+    meses: { 'abr.-26': 'April 2026', 'may.-26': 'May 2026' }
+  }
+};
+
+const DATA = {
+  'abr.-26': {
+    capital: 1733.14,
+    invertido: 1672.01,
+    rendMes: 47.21,
+    rendPct: '2.98%',
+    ingresos: 100.92,
+    egresos: 0,
+    cierreAnt: 1585.01,
+    rendTotal: '1.79%',
+    rf: {
+      cierreAnt: 1073.65, rend: 26.47, ingresos: 100.92,
+      egresos: 0, comisiones: 0, capital: 1201.04, rent: '2.47%',
+      comment: {
+        es: 'Los ingresos de US$100.92 corresponden a depósito de Euros.',
+        en: 'US$100.92 deposit corresponds to Euro transfer.'
+      }
+    },
+    kt: {
+      cierreAnt: 511.36, rend: 20.74, ingresos: 0,
+      egresos: 0, comisiones: 0, capital: 532.10, rent: '4.06%',
+      comment: null
+    },
+    evol: [
+      { mes: 'mar.-26', total: 1585.01, inv: 1500 },
+      { mes: 'abr.-26', total: 1733.14, inv: 1672.01 }
+    ],
+    div: [
+      { label: 'Fixed Income', pct: 68, valor: 1335.18, color: '#2C623F' },
+      { label: 'Stocks',       pct: 32, valor: 615.76,  color: '#F5C842' },
+      { label: 'Cash',         pct: 0,  valor: 0.32,    color: '#b8d4c4' }
+    ]
+  },
+  'may.-26': {
+    capital: 1951.26,
+    invertido: 1818.55,
+    rendMes: 111.92,
+    rendPct: '6.46%',
+    ingresos: 106.20,
+    egresos: 0,
+    cierreAnt: 1733.17,
+    rendTotal: '7.30%',
+    rf: {
+      cierreAnt: 1201.04, rend: 27.93, ingresos: 106.20,
+      egresos: 0, comisiones: 0, capital: 1335.18, rent: '2.33%',
+      comment: null
+    },
+    kt: {
+      cierreAnt: 532.10, rend: 83.99, ingresos: 0,
+      egresos: 0, comisiones: 0, capital: 616.08, rent: '15.78%',
+      comment: null
+    },
+    evol: [
+      { mes: 'mar.-26', total: 1585.01, inv: 1500 },
+      { mes: 'abr.-26', total: 1733.14, inv: 1672.01 },
+      { mes: 'may.-26', total: 1951.26, inv: 1818.55 }
+    ],
+    div: [
+      { label: 'Fixed Income', pct: 68, valor: 1335.18, color: '#2C623F' },
+      { label: 'Stocks',       pct: 32, valor: 615.76,  color: '#F5C842' },
+      { label: 'Cash',         pct: 0,  valor: 0.32,    color: '#b8d4c4' }
+    ]
+  }
+};
+
+let lang = 'es';
+let lineChart = null, pieChart = null;
+
+function fmt(n) {
+  return 'US$ ' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent === l.toUpperCase());
+  });
+  render();
+}
+
+function buildFundTable(tableId, fund, t) {
+  const rows = [
+    { label: t.filaCierreAnt,    val: fmt(fund.cierreAnt), cls: '' },
+    { label: t.filaRend,         val: fmt(fund.rend),      cls: fund.rend >= 0 ? 'pos' : 'neg' },
+    { label: t.filaIngresos,     val: fmt(fund.ingresos),  cls: '' },
+    { label: t.filaEgresos,      val: fmt(fund.egresos),   cls: '' },
+    { label: t.filaComisiones,   val: fmt(fund.comisiones),cls: '' },
+    { label: t.filaCapital,      val: fmt(fund.capital),   cls: 'total' },
+    { label: t.filaRentabilidad, val: fund.rent,           cls: fund.rent.startsWith('-') ? 'neg' : 'pos' }
+  ];
+  const html = rows.map(r =>
+    `<tr>
+      <td class="td-label">${r.label}</td>
+      <td class="td-val ${r.cls}">${r.val}</td>
+    </tr>`
+  ).join('');
+  document.getElementById(tableId).innerHTML = `<tbody>${html}</tbody>`;
+}
+
+function render() {
+  const t = T[lang];
+  const month = document.getElementById('month-sel').value;
+  const d = DATA[month];
+
+  // Actualizar opciones del select
+  const sel = document.getElementById('month-sel');
+  sel.options[0].text = t.meses['abr.-26'];
+  sel.options[1].text = t.meses['may.-26'];
+
+  // Labels
+  document.getElementById('lbl-resumen').textContent       = t.resumen;
+  document.getElementById('lbl-capital').textContent       = t.capital;
+  document.getElementById('lbl-invertido').textContent     = t.invertido;
+  document.getElementById('lbl-rend-mes').textContent      = t.rendMes;
+  document.getElementById('lbl-ingresos').textContent      = t.ingresos;
+  document.getElementById('lbl-egresos').textContent       = t.egresos;
+  document.getElementById('lbl-rend-total').textContent    = t.rendTotal;
+  document.getElementById('lbl-cierre-ant').textContent    = t.cierreAnt;
+  document.getElementById('lbl-evolucion').textContent     = t.evolucion;
+  document.getElementById('lbl-legend-total').textContent  = t.legendTotal;
+  document.getElementById('lbl-legend-inv').textContent    = t.legendInv;
+  document.getElementById('lbl-diversificacion').textContent = t.diversificacion;
+  document.getElementById('lbl-renta-fija').textContent    = t.rentaFija;
+  document.getElementById('lbl-acciones').textContent      = t.acciones;
+  document.getElementById('footer-date').textContent       = t.meses[month];
+
+  // Valores
+  document.getElementById('val-capital').textContent    = fmt(d.capital);
+  document.getElementById('val-invertido').textContent  = fmt(d.invertido);
+  document.getElementById('val-rend-mes').textContent   = fmt(d.rendMes);
+  document.getElementById('val-rend-pct').textContent   = d.rendPct;
+  document.getElementById('val-ingresos').textContent   = fmt(d.ingresos);
+  document.getElementById('val-egresos').textContent    = fmt(d.egresos);
+  document.getElementById('val-rend-total').textContent = d.rendTotal;
+  document.getElementById('val-cierre-ant').textContent = fmt(d.cierreAnt);
+
+  // Tablas de fondos
+  buildFundTable('tbl-rf', d.rf, t);
+  buildFundTable('tbl-kt', d.kt, t);
+
+  // Comentarios
+  const cRF = document.getElementById('comment-rf');
+  if (d.rf.comment) {
+    cRF.style.display = 'block';
+    cRF.textContent = d.rf.comment[lang];
+  } else {
+    cRF.style.display = 'none';
+  }
+
+  const cKT = document.getElementById('comment-kt');
+  if (d.kt.comment) {
+    cKT.style.display = 'block';
+    cKT.textContent = d.kt.comment[lang];
+  } else {
+    cKT.style.display = 'none';
+  }
+
+  // Gráfico de líneas
+  const labels  = d.evol.map(e => e.mes);
+  const totals  = d.evol.map(e => e.total);
+  const inverts = d.evol.map(e => e.inv);
+
+  if (lineChart) lineChart.destroy();
+  lineChart = new Chart(document.getElementById('lineChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: t.legendTotal,
+          data: totals,
+          borderColor: '#F5C842',
+          backgroundColor: 'rgba(245,200,66,0.08)',
+          borderWidth: 2.5,
+          pointBackgroundColor: '#F5C842',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 5,
+          tension: 0.3,
+          fill: true
+        },
+        {
+          label: t.legendInv,
+          data: inverts,
+          borderColor: '#2C623F',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          borderDash: [6, 4],
+          pointBackgroundColor: '#2C623F',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 5,
+          tension: 0.3,
+          fill: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.dataset.label + ': ' + fmt(ctx.parsed.y)
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { family: 'Montserrat', size: 11 }, color: '#5a6a5f' }
+        },
+        y: {
+          grid: { color: 'rgba(0,0,0,0.05)' },
+          ticks: {
+            font: { family: 'Montserrat', size: 10 },
+            color: '#5a6a5f',
+            callback: v => '$' + Number(v).toLocaleString('es-AR')
+          }
+        }
+      }
+    }
+  });
+
+  // Leyenda del pie
+  const leg = document.getElementById('pie-legend');
+  leg.innerHTML = d.div.map(item => `
+    <div class="legend-item">
+      <div class="legend-dot" style="background:${item.color}"></div>
+      <div>
+        <div class="legend-pct">${item.pct}%</div>
+        <div class="legend-name">${item.label}</div>
+        <div class="legend-val">${fmt(item.valor)}</div>
+      </div>
+    </div>
+  `).join('');
+
+  // Gráfico de pie
+  if (pieChart) pieChart.destroy();
+  const pieData = d.div.map(i => i.pct > 0 ? i.pct : 0.3);
+  pieChart = new Chart(document.getElementById('pieChart'), {
+    type: 'doughnut',
+    data: {
+      labels: d.div.map(i => i.label),
+      datasets: [{
+        data: pieData,
+        backgroundColor: d.div.map(i => i.color),
+        borderWidth: 3,
+        borderColor: '#ffffff',
+        hoverBorderColor: '#ffffff'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '68%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.label + ': ' + d.div[ctx.dataIndex].pct + '%'
+          }
+        }
+      }
+    }
+  });
+}
+
+render();
+</script>
+</body>
+</html>
