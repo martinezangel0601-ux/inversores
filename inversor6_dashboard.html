@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DelInversor — Inversor 6</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --verde: #2C623F; --verde2: #1e4a2e; --verde-light: #e8f2ec;
+    --dorado: #F5C842; --dorado2: #e6b830;
+    --crypto: #9b6fd4; --crypto-light: #f3eeff;
+    --bg: #f4f6f3; --card: #ffffff; --text: #1a1a1a; --muted: #5a6a5f; --border: #d4e0d8;
+    --font: 'Montserrat', sans-serif;
+  }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+  .header { background: var(--verde); padding: 20px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+  .header-left { display: flex; flex-direction: column; gap: 3px; }
+  .brand { font-size: 10px; font-weight: 800; letter-spacing: 3px; color: rgba(255,255,255,0.5); text-transform: uppercase; }
+  .inv-name { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+  .header-controls { display: flex; align-items: center; gap: 12px; }
+  .lang-toggle { display: flex; border: 1.5px solid rgba(255,255,255,0.25); border-radius: 8px; overflow: hidden; }
+  .lang-btn { background: transparent; border: none; color: rgba(255,255,255,0.55); font-family: var(--font); font-size: 11px; font-weight: 700; padding: 6px 14px; cursor: pointer; transition: all 0.2s; letter-spacing: 1px; }
+  .lang-btn.active { background: var(--dorado); color: var(--verde2); }
+  .lang-btn:not(.active):hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .month-sel { background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.25); border-radius: 8px; color: #fff; font-family: var(--font); font-size: 12px; font-weight: 600; padding: 6px 32px 6px 14px; cursor: pointer; outline: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.7)' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; background-color: rgba(255,255,255,0.12); }
+  .month-sel option { background: var(--verde2); color: #fff; }
+
+  .main { padding: 24px 32px; flex: 1; }
+  .section-label { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+
+  .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .metric-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; position: relative; overflow: hidden; }
+  .metric-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--verde); }
+  .metric-card.highlight::before { background: var(--dorado); }
+  .metric-card.crypto-accent::before { background: var(--crypto); }
+  .metric-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .metric-value { font-size: 26px; font-weight: 700; color: var(--verde); letter-spacing: -0.5px; line-height: 1; margin-bottom: 6px; }
+  .metric-sub-label { font-size: 10px; color: var(--muted); font-weight: 500; margin-top: 10px; margin-bottom: 3px; }
+  .metric-sub-value { font-size: 14px; font-weight: 600; color: var(--text); }
+  .badge { display: inline-block; background: var(--dorado); color: var(--verde2); font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+
+  .line-legend { display: flex; gap: 20px; margin-bottom: 12px; }
+  .line-legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); font-weight: 500; }
+  .swatch { width: 24px; height: 3px; border-radius: 2px; flex-shrink: 0; }
+  .swatch.dashed { background: repeating-linear-gradient(90deg, var(--verde) 0, var(--verde) 5px, transparent 5px, transparent 9px); height: 2px; }
+
+  /* CRYPTO SECTION */
+  .crypto-section { margin-bottom: 20px; }
+  .crypto-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .fund-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 4px; }
+  .fund-table td { padding: 8px 4px; border-bottom: 1px solid var(--border); }
+  .fund-table tr:last-child td { border-bottom: none; }
+  .fund-table .td-label { color: var(--muted); font-weight: 500; }
+  .fund-table .td-val { text-align: right; font-weight: 600; color: var(--text); }
+  .fund-table .td-val.total { color: var(--verde); font-size: 15px; font-weight: 700; }
+  .fund-table .td-val.pos { color: #2C623F; }
+  .fund-table .td-val.neg { color: #c0392b; }
+  .comment-box { margin-top: 12px; background: var(--crypto-light); border-left: 3px solid var(--crypto); border-radius: 0 8px 8px 0; padding: 10px 14px; font-size: 11px; color: var(--muted); line-height: 1.6; display: none; }
+
+  .crypto-kpis { display: flex; flex-direction: column; gap: 14px; justify-content: center; }
+  .kpi-card { border-radius: 12px; padding: 18px 22px; }
+  .kpi-card.crypto-bg { background: var(--crypto-light); }
+  .kpi-card.dorado-bg { background: #fffbe6; }
+  .kpi-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .kpi-value { font-size: 32px; font-weight: 800; letter-spacing: -1px; line-height: 1; }
+  .kpi-value.crypto-color { color: var(--crypto); }
+  .kpi-value.dorado-color { color: #a07800; }
+  .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  /* AVISO SIN DATOS */
+  .no-data-banner { background: #fff8e6; border: 1px solid #f5c842; border-radius: 10px; padding: 14px 20px; font-size: 12px; color: #a07800; font-weight: 500; display: none; margin-bottom: 16px; }
+
+  .footer { background: var(--verde); padding: 12px 32px; display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+  .footer-brand { font-size: 11px; font-weight: 800; letter-spacing: 3px; color: rgba(255,255,255,0.5); text-transform: uppercase; }
+  .footer-date { font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 500; }
+
+  @media (max-width: 900px) {
+    .metrics-grid { grid-template-columns: repeat(2,1fr); }
+    .two-col, .crypto-layout { grid-template-columns: 1fr; }
+    .main { padding: 16px; }
+    .header { padding: 16px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <span class="brand">DelInversor</span>
+    <span class="inv-name" id="inv-title">Inversor 6</span>
+  </div>
+  <div class="header-controls">
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('es')">ES</button>
+      <button class="lang-btn" onclick="setLang('en')">EN</button>
+    </div>
+    <select class="month-sel" id="month-sel" onchange="render()"></select>
+  </div>
+</header>
+
+<main class="main">
+  <p class="section-label" id="lbl-resumen"></p>
+
+  <div id="no-data-banner" class="no-data-banner"></div>
+
+  <div class="metrics-grid">
+    <div class="metric-card highlight">
+      <div class="metric-label" id="lbl-capital"></div>
+      <div class="metric-value" id="val-capital">—</div>
+      <div class="metric-sub-label" id="lbl-invertido"></div>
+      <div class="metric-sub-value" id="val-invertido">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label" id="lbl-rend-mes"></div>
+      <div class="metric-value" id="val-rend-mes">—</div>
+      <div><span class="badge" id="val-rend-pct">—</span></div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label" id="lbl-ingresos"></div>
+      <div class="metric-value" id="val-ingresos">—</div>
+      <div class="metric-sub-label" id="lbl-egresos"></div>
+      <div class="metric-sub-value" id="val-egresos">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label" id="lbl-cierre-lbl"></div>
+      <div class="metric-value" id="val-cierre-ant">—</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <p class="section-label" id="lbl-evolucion"></p>
+      <div class="line-legend">
+        <div class="line-legend-item">
+          <div class="swatch" style="background:var(--crypto)"></div>
+          <span id="lbl-legend-total"></span>
+        </div>
+        <div class="line-legend-item">
+          <div class="swatch dashed"></div>
+          <span id="lbl-legend-inv"></span>
+        </div>
+      </div>
+      <div style="position:relative;width:100%;height:200px">
+        <canvas id="lineChart"></canvas>
+      </div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;background:var(--crypto-light);border-color:#d4c4f0">
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--crypto);margin-bottom:10px" id="lbl-tipo-cartera"></div>
+      <div style="font-size:64px;font-weight:800;color:var(--crypto);letter-spacing:-2px;line-height:1">100%</div>
+      <div style="font-size:14px;font-weight:600;color:var(--muted);margin-top:10px">Crypto</div>
+      <div style="margin-top:16px;font-size:11px;color:var(--muted);max-width:200px;line-height:1.6" id="lbl-crypto-desc"></div>
+    </div>
+  </div>
+
+  <div class="crypto-section">
+    <p class="section-label" id="lbl-crypto-title"></p>
+    <div class="crypto-layout">
+      <div class="card">
+        <table class="fund-table" id="tbl-crypto"></table>
+        <div class="comment-box" id="comment-crypto"></div>
+      </div>
+      <div class="crypto-kpis">
+        <div class="kpi-card crypto-bg">
+          <div class="kpi-label" id="lbl-kpi-cap"></div>
+          <div class="kpi-value crypto-color" id="val-kpi-cap">—</div>
+        </div>
+        <div class="kpi-card dorado-bg">
+          <div class="kpi-label" id="lbl-kpi-rent"></div>
+          <div class="kpi-value dorado-color" id="val-kpi-rent">—</div>
+          <div class="kpi-sub" id="val-kpi-rend">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <span class="footer-brand">DelInversor</span>
+  <span class="footer-date" id="footer-date"></span>
+</footer>
+
+<script>
+const T = {
+  es: {
+    invName: 'Inversor 6',
+    resumen: 'Resumen del mes', capital: 'Capital total', invertido: 'Capital invertido',
+    rendMes: 'Rendimientos del mes', ingresos: 'Ingresos', egresos: 'Egresos',
+    cierreLbl: 'Cierre anterior',
+    evolucion: 'Evolución del capital', legendTotal: 'Capital total', legendInv: 'Capital invertido',
+    tipoCartera: 'Composición de cartera',
+    cryptoDesc: 'Cartera 100% en activos digitales',
+    cryptoTitle: 'Crypto',
+    kpiCap: 'Capital actual', kpiRent: 'Rentabilidad mensual',
+    filaCierre: 'Cierre mes anterior', filaRend: 'Rendimientos', filaIng: 'Ingresos',
+    filaEgr: 'Egresos', filaCom: 'Comisiones', filaCap: 'Capital actual', filaRent: 'Rentabilidad',
+    sinDatos: 'Los datos detallados de este mes aún no están disponibles. Se muestra solo el resumen general.',
+    meses: {
+      'feb.-26':'Febrero 2026','mar.-26':'Marzo 2026','abr.-26':'Abril 2026','may.-26':'Mayo 2026'
+    }
+  },
+  en: {
+    invName: 'Investor 6',
+    resumen: 'Monthly summary', capital: 'Total capital', invertido: 'Invested capital',
+    rendMes: 'Monthly returns', ingresos: 'Deposits', egresos: 'Withdrawals',
+    cierreLbl: 'Previous close',
+    evolucion: 'Capital evolution', legendTotal: 'Total capital', legendInv: 'Invested capital',
+    tipoCartera: 'Portfolio composition',
+    cryptoDesc: '100% digital assets portfolio',
+    cryptoTitle: 'Crypto',
+    kpiCap: 'Current capital', kpiRent: 'Monthly yield',
+    filaCierre: 'Previous close', filaRend: 'Returns', filaIng: 'Deposits',
+    filaEgr: 'Withdrawals', filaCom: 'Fees', filaCap: 'Current capital', filaRent: 'Yield',
+    sinDatos: 'Detailed data for this month is not yet available. Showing general summary only.',
+    meses: {
+      'feb.-26':'February 2026','mar.-26':'March 2026','abr.-26':'April 2026','may.-26':'May 2026'
+    }
+  }
+};
+
+const EVOL_ALL = [
+  { mes:'feb.-26', total:3085.11, inv:null },
+  { mes:'mar.-26', total:3547.02, inv:null },
+  { mes:'abr.-26', total:3840.32, inv:null },
+  { mes:'may.-26', total:4966.02, inv:null }
+];
+
+const MONTHS = ['feb.-26','mar.-26','abr.-26','may.-26'];
+
+const DATA = {
+  'feb.-26': {
+    capital:3085.11, invertido:null, rendMes:-1565.31, rendPct:'-33.66%',
+    ingresos:666.00, egresos:0, cierreAnt:3984.42, hasDetail: true,
+    crypto: { cierreAnt:3984.42, rend:-1565.31, ing:666.00, egr:0, com:0, capital:3085.11, rent:null, comment:null }
+  },
+  'mar.-26': {
+    capital:3547.02, invertido:null, rendMes:59.40, rendPct:'1.93%',
+    ingresos:402.50, egresos:0, cierreAnt:3085.11, hasDetail: true,
+    crypto: { cierreAnt:3085.11, rend:59.40, ing:402.50, egr:0, com:0, capital:3547.02, rent:'1.93%', comment:null }
+  },
+  'abr.-26': {
+    capital:3840.32, invertido:null, rendMes:61.31, rendPct:'1.73%',
+    ingresos:232.00, egresos:0, cierreAnt:3547.02, hasDetail: true,
+    crypto: { cierreAnt:3547.02, rend:61.31, ing:232.00, egr:0, com:0, capital:3840.32, rent:'1.73%', comment:null }
+  },
+  'may.-26': {
+    capital:4966.02, invertido:null, rendMes:502.02, rendPct:'na',
+    ingresos:465.00, egresos:0, cierreAnt:3840.32, hasDetail: false,
+    crypto: null
+  }
+};
+
+let lang = 'es';
+let lineChart = null;
+
+function fmt(n) {
+  if (n === null || n === undefined) return '—';
+  const abs = Math.abs(n);
+  const str = abs.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (n < 0 ? '-' : '') + 'US$ ' + str;
+}
+
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent === l.toUpperCase()));
+  render();
+}
+
+function buildMonthOptions() {
+  const sel = document.getElementById('month-sel');
+  const current = sel.value || 'may.-26';
+  const t = T[lang];
+  sel.innerHTML = MONTHS.map(m => `<option value="${m}"${m===current?' selected':''}>${t.meses[m]}</option>`).join('');
+}
+
+function buildFundTable(fund, t) {
+  if (!fund) {
+    document.getElementById('tbl-crypto').innerHTML = '';
+    return;
+  }
+  const rows = [
+    { label: t.filaCierre, val: fmt(fund.cierreAnt), cls: '' },
+    { label: t.filaRend,   val: fmt(fund.rend),      cls: fund.rend >= 0 ? 'pos' : 'neg' },
+    { label: t.filaIng,    val: fmt(fund.ing),        cls: '' },
+    { label: t.filaEgr,    val: fmt(fund.egr),        cls: fund.egr < 0 ? 'neg' : '' },
+    { label: t.filaCom,    val: fmt(fund.com),        cls: '' },
+    { label: t.filaCap,    val: fmt(fund.capital),    cls: 'total' },
+    { label: t.filaRent,   val: fund.rent || '—',     cls: fund.rent ? (fund.rent.startsWith('-') ? 'neg' : 'pos') : '' }
+  ];
+  document.getElementById('tbl-crypto').innerHTML =
+    '<tbody>' + rows.map(r =>
+      `<tr><td class="td-label">${r.label}</td><td class="td-val ${r.cls}">${r.val}</td></tr>`
+    ).join('') + '</tbody>';
+}
+
+function render() {
+  const t = T[lang];
+  const month = document.getElementById('month-sel').value || 'may.-26';
+  const d = DATA[month];
+
+  const sel = document.getElementById('month-sel');
+  sel.innerHTML = MONTHS.map(m => `<option value="${m}"${m===month?' selected':''}>${t.meses[m]}</option>`).join('');
+
+  // Labels
+  document.getElementById('inv-title').textContent        = t.invName;
+  document.getElementById('lbl-resumen').textContent      = t.resumen;
+  document.getElementById('lbl-capital').textContent      = t.capital;
+  document.getElementById('lbl-invertido').textContent    = t.invertido;
+  document.getElementById('lbl-rend-mes').textContent     = t.rendMes;
+  document.getElementById('lbl-ingresos').textContent     = t.ingresos;
+  document.getElementById('lbl-egresos').textContent      = t.egresos;
+  document.getElementById('lbl-cierre-lbl').textContent   = t.cierreLbl;
+  document.getElementById('lbl-evolucion').textContent    = t.evolucion;
+  document.getElementById('lbl-legend-total').textContent = t.legendTotal;
+  document.getElementById('lbl-legend-inv').textContent   = t.legendInv;
+  document.getElementById('lbl-tipo-cartera').textContent = t.tipoCartera;
+  document.getElementById('lbl-crypto-desc').textContent  = t.cryptoDesc;
+  document.getElementById('lbl-crypto-title').textContent = t.cryptoTitle;
+  document.getElementById('lbl-kpi-cap').textContent      = t.kpiCap;
+  document.getElementById('lbl-kpi-rent').textContent     = t.kpiRent;
+  document.getElementById('footer-date').textContent      = t.meses[month];
+
+  // Banner sin datos
+  const banner = document.getElementById('no-data-banner');
+  if (!d.hasDetail) {
+    banner.style.display = 'block';
+    banner.textContent = t.sinDatos;
+  } else {
+    banner.style.display = 'none';
+  }
+
+  // Valores resumen
+  document.getElementById('val-capital').textContent   = fmt(d.capital);
+  document.getElementById('val-invertido').textContent = d.invertido ? fmt(d.invertido) : '—';
+  document.getElementById('val-rend-mes').textContent  = fmt(d.rendMes);
+  document.getElementById('val-ingresos').textContent  = fmt(d.ingresos);
+  document.getElementById('val-egresos').textContent   = fmt(d.egresos);
+  document.getElementById('val-cierre-ant').textContent= fmt(d.cierreAnt);
+
+  const badge = document.getElementById('val-rend-pct');
+  if (d.rendPct === 'na') {
+    badge.textContent = '—';
+    badge.style.background = '#eee';
+    badge.style.color = '#999';
+  } else {
+    badge.textContent = d.rendPct;
+    badge.style.background = d.rendMes >= 0 ? 'var(--dorado)' : '#fde8e8';
+    badge.style.color      = d.rendMes >= 0 ? 'var(--verde2)' : '#c0392b';
+  }
+
+  // Tabla crypto
+  buildFundTable(d.crypto, t);
+
+  // KPIs crypto
+  const cryptoSection = document.querySelector('.crypto-section');
+  if (d.crypto) {
+    cryptoSection.style.display = 'block';
+    document.getElementById('val-kpi-cap').textContent  = fmt(d.crypto.capital);
+    document.getElementById('val-kpi-rent').textContent = d.crypto.rent || '—';
+    document.getElementById('val-kpi-rend').textContent = fmt(d.crypto.rend);
+    const comment = document.getElementById('comment-crypto');
+    if (d.crypto.comment) { comment.style.display = 'block'; comment.textContent = d.crypto.comment; }
+    else comment.style.display = 'none';
+  } else {
+    cryptoSection.style.display = 'none';
+  }
+
+  // Gráfico líneas
+  const monthIdx = EVOL_ALL.findIndex(e => e.mes === month);
+  const evolSlice = EVOL_ALL.slice(0, monthIdx + 1);
+
+  if (lineChart) lineChart.destroy();
+  lineChart = new Chart(document.getElementById('lineChart'), {
+    type: 'line',
+    data: {
+      labels: evolSlice.map(e => e.mes),
+      datasets: [
+        {
+          label: t.legendTotal,
+          data: evolSlice.map(e => e.total),
+          borderColor: '#9b6fd4',
+          backgroundColor: 'rgba(155,111,212,0.08)',
+          borderWidth: 2.5,
+          pointBackgroundColor: '#9b6fd4',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 5,
+          tension: 0.3,
+          fill: true
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + fmt(ctx.parsed.y) } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { family: 'Montserrat', size: 10 }, color: '#5a6a5f' } },
+        y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { family: 'Montserrat', size: 10 }, color: '#5a6a5f', callback: v => 'US$' + Number(v).toLocaleString('es-AR') } }
+      }
+    }
+  });
+}
+
+buildMonthOptions();
+render();
+</script>
+</body>
+</html>
