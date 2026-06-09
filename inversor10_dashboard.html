@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DelInversor — DI-P4W8M1</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --verde: #2C623F; --verde2: #1e4a2e; --verde-light: #e8f2ec;
+    --dorado: #F5C842; --dorado2: #e6b830;
+    --crypto: #9b6fd4; --crypto-light: #f3eeff;
+    --bg: #f4f6f3; --card: #ffffff; --text: #1a1a1a; --muted: #5a6a5f; --border: #d4e0d8;
+    --font: 'Montserrat', sans-serif;
+  }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+  .header { background: var(--verde); padding: 20px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+  .header-left { display: flex; flex-direction: column; gap: 3px; }
+  .brand { font-size: 10px; font-weight: 800; letter-spacing: 3px; color: rgba(255,255,255,0.5); text-transform: uppercase; }
+  .inv-name { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+  .header-controls { display: flex; align-items: center; gap: 12px; }
+  .lang-toggle { display: flex; border: 1.5px solid rgba(255,255,255,0.25); border-radius: 8px; overflow: hidden; }
+  .lang-btn { background: transparent; border: none; color: rgba(255,255,255,0.55); font-family: var(--font); font-size: 11px; font-weight: 700; padding: 6px 14px; cursor: pointer; transition: all 0.2s; letter-spacing: 1px; }
+  .lang-btn.active { background: var(--dorado); color: var(--verde2); }
+  .lang-btn:not(.active):hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .month-sel { background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.25); border-radius: 8px; color: #fff; font-family: var(--font); font-size: 12px; font-weight: 600; padding: 6px 32px 6px 14px; cursor: pointer; outline: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.7)' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; background-color: rgba(255,255,255,0.12); }
+  .month-sel option { background: var(--verde2); color: #fff; }
+
+  .main { padding: 24px 32px; flex: 1; }
+  .section-label { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+
+  .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .metric-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; position: relative; overflow: hidden; }
+  .metric-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--verde); }
+  .metric-card.highlight::before { background: var(--dorado); }
+  .metric-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .metric-value { font-size: 26px; font-weight: 700; color: var(--verde); letter-spacing: -0.5px; line-height: 1; margin-bottom: 6px; }
+  .metric-sub-label { font-size: 10px; color: var(--muted); font-weight: 500; margin-top: 10px; margin-bottom: 3px; }
+  .metric-sub-value { font-size: 14px; font-weight: 600; color: var(--text); }
+  .badge { display: inline-block; background: var(--dorado); color: var(--verde2); font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+
+  .line-legend { display: flex; gap: 20px; margin-bottom: 12px; }
+  .line-legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); font-weight: 500; }
+  .swatch { width: 24px; height: 3px; border-radius: 2px; flex-shrink: 0; }
+
+  .pie-area { display: flex; align-items: center; justify-content: center; gap: 24px; margin-top: 8px; }
+  .pie-canvas-wrap { position: relative; width: 150px; height: 150px; flex-shrink: 0; }
+  .legend { display: flex; flex-direction: column; gap: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 10px; }
+  .legend-dot { width: 13px; height: 13px; border-radius: 4px; flex-shrink: 0; }
+  .legend-pct { font-size: 16px; font-weight: 700; line-height: 1; }
+  .legend-name { font-size: 11px; font-weight: 600; color: var(--text); }
+  .legend-val { font-size: 10px; color: var(--muted); margin-top: 1px; }
+
+  /* FONDOS 2x2 */
+  .fondos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .fund-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 4px; }
+  .fund-table td { padding: 7px 4px; border-bottom: 1px solid var(--border); }
+  .fund-table tr:last-child td { border-bottom: none; }
+  .fund-table .td-label { color: var(--muted); font-weight: 500; }
+  .fund-table .td-val { text-align: right; font-weight: 600; color: var(--text); }
+  .fund-table .td-val.total { color: var(--verde); font-size: 14px; font-weight: 700; }
+  .fund-table .td-val.pos { color: #2C623F; }
+  .fund-table .td-val.neg { color: #c0392b; }
+  .comment-box { margin-top: 10px; background: var(--verde-light); border-left: 3px solid var(--verde); border-radius: 0 8px 8px 0; padding: 9px 12px; font-size: 11px; color: var(--muted); line-height: 1.6; display: none; }
+  .comment-box.crypto-comment { background: var(--crypto-light); border-color: var(--crypto); }
+
+  /* MOVIMIENTOS */
+  .movimientos-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; justify-content: center; }
+  .mov-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .mov-item:last-child { border-bottom: none; }
+  .mov-label { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .mov-val { font-size: 16px; font-weight: 700; }
+  .mov-val.pos { color: var(--verde); }
+  .mov-val.neg { color: #c0392b; }
+  .mov-val.neutral { color: var(--text); }
+  .mov-note { font-size: 10px; color: var(--muted); margin-top: 3px; font-style: italic; }
+
+  .footer { background: var(--verde); padding: 12px 32px; display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+  .footer-brand { font-size: 11px; font-weight: 800; letter-spacing: 3px; color: rgba(255,255,255,0.5); text-transform: uppercase; }
+  .footer-date { font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 500; }
+
+  @media (max-width: 900px) {
+    .metrics-grid { grid-template-columns: repeat(2,1fr); }
+    .two-col, .fondos-grid { grid-template-columns: 1fr; }
+    .main { padding: 16px; }
+    .header { padding: 16px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <span class="brand">DelInversor</span>
+    <span class="inv-name">DI-P4W8M1</span>
+  </div>
+  <div class="header-controls">
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('es')">ES</button>
+      <button class="lang-btn" onclick="setLang('en')">EN</button>
+    </div>
+    <select class="month-sel" id="month-sel" onchange="render()"></select>
+  </div>
+</header>
+
+<main class="main">
+  <p class="section-label" id="lbl-resumen"></p>
+  <div class="metrics-grid">
+    <div class="metric-card highlight">
+      <div class="metric-label" id="lbl-capital"></div>
+      <div class="metric-value" id="val-capital">—</div>
+      <div class="metric-sub-label" id="lbl-cierre-ant"></div>
+      <div class="metric-sub-value" id="val-cierre-ant">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label" id="lbl-rend-mes"></div>
+      <div class="metric-value" id="val-rend-mes">—</div>
+      <div><span class="badge" id="val-rend-pct">—</span></div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label" id="lbl-ingresos"></div>
+      <div class="metric-value" id="val-ingresos">—</div>
+      <div class="metric-sub-label" id="lbl-egresos"></div>
+      <div class="metric-sub-value" id="val-egresos">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label" id="lbl-rend-total"></div>
+      <div class="metric-value" id="val-rend-total">—</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <p class="section-label" id="lbl-evolucion"></p>
+      <div class="line-legend">
+        <div class="line-legend-item"><div class="swatch" style="background:#F5C842"></div><span id="lbl-legend-total"></span></div>
+      </div>
+      <div style="position:relative;width:100%;height:200px">
+        <canvas id="lineChart"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <p class="section-label" id="lbl-diversificacion"></p>
+      <div class="pie-area">
+        <div class="pie-canvas-wrap"><canvas id="pieChart"></canvas></div>
+        <div class="legend" id="pie-legend"></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="section-label" id="lbl-fondos"></p>
+  <div class="fondos-grid">
+    <div class="card">
+      <p class="section-label" id="lbl-renta-fija"></p>
+      <table class="fund-table" id="tbl-rf"></table>
+      <div class="comment-box" id="comment-rf"></div>
+    </div>
+    <div class="card">
+      <p class="section-label" id="lbl-acciones"></p>
+      <table class="fund-table" id="tbl-kt"></table>
+      <div class="comment-box" id="comment-kt"></div>
+    </div>
+    <div class="card">
+      <p class="section-label" id="lbl-crypto"></p>
+      <table class="fund-table" id="tbl-crypto"></table>
+      <div class="comment-box crypto-comment" id="comment-crypto"></div>
+    </div>
+    <div class="movimientos-card">
+      <p class="section-label" id="lbl-movimientos"></p>
+      <div id="movimientos-content"></div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <span class="footer-brand">DelInversor</span>
+  <span class="footer-date" id="footer-date"></span>
+</footer>
+
+<script>
+const T = {
+  es: {
+    resumen: 'Resumen del mes', capital: 'Capital total', cierreAnt: 'Cierre anterior',
+    rendMes: 'Rendimientos del mes', ingresos: 'Ingresos', egresos: 'Egresos',
+    rendTotal: 'Rendimiento total histórico',
+    evolucion: 'Evolución del capital', legendTotal: 'Capital total',
+    diversificacion: 'Diversificación de la cartera',
+    fondos: 'Detalle por fondo',
+    rentaFija: 'Fondo Renta Fija', acciones: 'Acciones KT', crypto: 'Crypto',
+    movimientos: 'Movimientos del mes',
+    movIngresos: 'Ingresos', movEgresos: 'Egresos', movNeto: 'Neto',
+    sinMovimientos: 'Sin movimientos este mes',
+    filaCierre: 'Cierre mes anterior', filaRend: 'Rendimientos', filaIng: 'Ingresos',
+    filaEgr: 'Egresos', filaCom: 'Comisiones', filaCap: 'Capital actual', filaRent: 'Rentabilidad',
+    meses: {
+      'nov.-25':'Noviembre 2025','dic.-25':'Diciembre 2025',
+      'ene.-26':'Enero 2026','mar.-26':'Marzo 2026',
+      'abr.-26':'Abril 2026','may.-26':'Mayo 2026'
+    }
+  },
+  en: {
+    resumen: 'Monthly summary', capital: 'Total capital', cierreAnt: 'Previous close',
+    rendMes: 'Monthly returns', ingresos: 'Deposits', egresos: 'Withdrawals',
+    rendTotal: 'Total historical return',
+    evolucion: 'Capital evolution', legendTotal: 'Total capital',
+    diversificacion: 'Portfolio allocation',
+    fondos: 'Fund breakdown',
+    rentaFija: 'Fixed Income Fund', acciones: 'KT Equities', crypto: 'Crypto',
+    movimientos: 'Monthly movements',
+    movIngresos: 'Deposits', movEgresos: 'Withdrawals', movNeto: 'Net',
+    sinMovimientos: 'No movements this month',
+    filaCierre: 'Previous close', filaRend: 'Returns', filaIng: 'Deposits',
+    filaEgr: 'Withdrawals', filaCom: 'Fees', filaCap: 'Current capital', filaRent: 'Yield',
+    meses: {
+      'nov.-25':'November 2025','dic.-25':'December 2025',
+      'ene.-26':'January 2026','mar.-26':'March 2026',
+      'abr.-26':'April 2026','may.-26':'May 2026'
+    }
+  }
+};
+
+const MONTHS = ['nov.-25','dic.-25','ene.-26','mar.-26','abr.-26','may.-26'];
+
+const EVOL_ALL = [
+  { mes:'oct.-24', total:17036.24 },
+  { mes:'nov.-24', total:17761.03 },
+  { mes:'dic.-24', total:20658.44 },
+  { mes:'ene.-25', total:20367.59 },
+  { mes:'feb.-25', total:19741.81 },
+  { mes:'mar.-25', total:19735.76 },
+  { mes:'abr.-25', total:20330.24 },
+  { mes:'may.-25', total:22805.45 },
+  { mes:'jun.-25', total:25573.55 },
+  { mes:'jul.-25', total:26300.32 },
+  { mes:'ago.-25', total:26730.56 },
+  { mes:'sep.-25', total:29340.93 },
+  { mes:'oct.-25', total:31200.96 },
+  { mes:'nov.-25', total:54670.74 },
+  { mes:'dic.-25', total:54292.32 },
+  { mes:'ene.-26', total:53053.88 },
+  { mes:'mar.-26', total:49663.65 },
+  { mes:'abr.-26', total:51191.96 },
+  { mes:'may.-26', total:37406.50 }
+];
+
+const DATA = {
+  'nov.-25': {
+    capital:54670.74, rendMes:-1892.92, rendPct:null,
+    ingresos:9228.00, egresos:-375.00, cierreAnt:47710.66, rendTotal:null,
+    rf:     { cierreAnt:26242.26, rend:581.24,   ing:9228.00, egr:0,        com:-375.00, capital:35676.50, rent:null,     comment:null },
+    kt:     { cierreAnt:16660.53, rend:null,      ing:0,       egr:0,        com:0,       capital:null,     rent:null,     comment:null },
+    crypto: { cierreAnt:null,     rend:null,      ing:0,       egr:0,        com:0,       capital:null,     rent:null,     comment:null },
+    movNote: { es: null, en: null }
+  },
+  'dic.-25': {
+    capital:54292.32, rendMes:-378.42, rendPct:null,
+    ingresos:0, egresos:0, cierreAnt:54670.74, rendTotal:null,
+    rf:     { cierreAnt:35676.50, rend:694.29,   ing:0,       egr:-4000.00, com:0,       capital:32370.79, rent:null,     comment:null },
+    kt:     { cierreAnt:16660.53, rend:-710.54,  ing:4000.00, egr:0,        com:0,       capital:19949.99, rent:null,     comment:null },
+    crypto: { cierreAnt:2333.71,  rend:-362.17,  ing:0,       egr:0,        com:0,       capital:1971.54,  rent:null,     comment:null },
+    movNote: { es: null, en: null }
+  },
+  'ene.-26': {
+    capital:53053.88, rendMes:1560.57, rendPct:null,
+    ingresos:0, egresos:-2799.00, cierreAnt:54292.32, rendTotal:null,
+    rf:     { cierreAnt:32370.79, rend:573.75,   ing:0,       egr:-2799.00, com:0,       capital:30145.54, rent:'1.85%',  comment:null },
+    kt:     { cierreAnt:19949.99, rend:574.01,   ing:0,       egr:0,        com:0,       capital:20524.01, rent:'2.88%',  comment:null },
+    crypto: { cierreAnt:1971.54,  rend:412.80,   ing:0,       egr:0,        com:0,       capital:2384.34,  rent:null,     comment:null },
+    movNote: { es: null, en: null }
+  },
+  'mar.-26': {
+    capital:49663.65, rendMes:83.37, rendPct:'0.17%',
+    ingresos:0, egresos:0, cierreAnt:49580.28, rendTotal:null,
+    rf:     { cierreAnt:30559.00, rend:623.00,   ing:0,       egr:-3000.00, com:0,       capital:28182.00, rent:'2.26%',
+              comment:'Los egresos de US$3.000 corresponden a rebalanceo de cuentas' },
+    kt:     { cierreAnt:17573.64, rend:-567.50,  ing:3000.00, egr:0,        com:0,       capital:20006.14, rent:'-2.76%',
+              comment:'Los ingresos de US$3.000 corresponden a rebalanceo de cuentas' },
+    crypto: { cierreAnt:1447.64,  rend:27.87,    ing:0,       egr:0,        com:0,       capital:1475.51,  rent:'1.93%',  comment:null },
+    movNote: { es: null, en: null }
+  },
+  'abr.-26': {
+    capital:51191.96, rendMes:1528.28, rendPct:'3.08%',
+    ingresos:0, egresos:0, cierreAnt:49663.65, rendTotal:null,
+    rf:     { cierreAnt:28182.00, rend:637.00,   ing:0,       egr:0,        com:0,       capital:28819.00, rent:'2.26%',  comment:null },
+    kt:     { cierreAnt:20006.14, rend:865.78,   ing:0,       egr:0,        com:0,       capital:20871.92, rent:'4.33%',  comment:null },
+    crypto: { cierreAnt:1475.51,  rend:25.50,    ing:0,       egr:0,        com:0,       capital:1501.01,  rent:'1.73%',  comment:null },
+    movNote: { es: null, en: null }
+  },
+  'may.-26': {
+    capital:37406.50, rendMes:4985.44, rendPct:'9.74%',
+    ingresos:0, egresos:-18771.00, cierreAnt:51191.96, rendTotal:null,
+    rf:     { cierreAnt:28819.00, rend:416.00,   ing:0,       egr:-10333.00,com:0,       capital:18902.00, rent:'2.25%',
+              comment:'Los egresos de US$10.333 corresponden a retiros de capital del día 27 de Abril' },
+    kt:     { cierreAnt:20871.92, rend:4377.88,  ing:0,       egr:-8438.00, com:0,       capital:16811.80, rent:'35.21%',
+              comment:'Los egresos de US$8.438 corresponden a retiros de capital del día 27 de Abril' },
+    crypto: { cierreAnt:1501.01,  rend:191.56,   ing:0,       egr:0,        com:0,       capital:1692.57,  rent:'12.76%', comment:null },
+    movNote: { es:'Los egresos de US$18.771 corresponden a retiros de capital del día 27 de Abril (16.000€)',
+               en:'US$18,771 withdrawals correspond to capital withdrawals on April 27 (€16,000)' }
+  }
+};
+
+const DIV = [
+  { label:'Fixed Income', pct:50.53, valor:18902.00, color:'#2C623F' },
+  { label:'Stocks',       pct:44.92, valor:16804.10, color:'#F5C842' },
+  { label:'Crypto',       pct:4.51,  valor:1688.68,  color:'#9b6fd4' },
+  { label:'Cash',         pct:0.03,  valor:11.59,    color:'#b8d4c4' }
+];
+
+let lang = 'es';
+let lineChart = null, pieChart = null;
+
+function fmt(n) {
+  if (n === null || n === undefined) return '—';
+  const abs = Math.abs(n);
+  const str = abs.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (n < 0 ? '-' : '') + 'US$ ' + str;
+}
+
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent === l.toUpperCase()));
+  render();
+}
+
+function buildFundTable(tableId, fund, t) {
+  const rows = [
+    { label: t.filaCierre, val: fmt(fund.cierreAnt), cls: '' },
+    { label: t.filaRend,   val: fund.rend !== null ? fmt(fund.rend) : '—', cls: fund.rend !== null ? (fund.rend >= 0 ? 'pos' : 'neg') : '' },
+    { label: t.filaIng,    val: fmt(fund.ing),        cls: '' },
+    { label: t.filaEgr,    val: fmt(fund.egr),        cls: fund.egr < 0 ? 'neg' : '' },
+    { label: t.filaCom,    val: fmt(fund.com),        cls: fund.com < 0 ? 'neg' : '' },
+    { label: t.filaCap,    val: fmt(fund.capital),    cls: 'total' },
+    { label: t.filaRent,   val: fund.rent || '—',     cls: fund.rent ? (fund.rent.startsWith('-') ? 'neg' : 'pos') : '' }
+  ];
+  document.getElementById(tableId).innerHTML =
+    '<tbody>' + rows.map(r =>
+      `<tr><td class="td-label">${r.label}</td><td class="td-val ${r.cls}">${r.val}</td></tr>`
+    ).join('') + '</tbody>';
+}
+
+function buildMovimientos(d, t) {
+  const container = document.getElementById('movimientos-content');
+  const hasIng = d.ingresos > 0;
+  const hasEgr = d.egresos < 0;
+
+  if (!hasIng && !hasEgr) {
+    container.innerHTML = `<div style="text-align:center;padding:24px 0;color:var(--muted);font-size:12px">${t.sinMovimientos}</div>`;
+    return;
+  }
+
+  const neto = d.ingresos + d.egresos;
+  let html = '';
+
+  if (hasIng) html += `
+    <div class="mov-item">
+      <div><div class="mov-label">${t.movIngresos}</div></div>
+      <div class="mov-val pos">${fmt(d.ingresos)}</div>
+    </div>`;
+
+  if (hasEgr) html += `
+    <div class="mov-item">
+      <div><div class="mov-label">${t.movEgresos}</div></div>
+      <div class="mov-val neg">${fmt(d.egresos)}</div>
+    </div>`;
+
+  html += `
+    <div class="mov-item">
+      <div><div class="mov-label">${t.movNeto}</div></div>
+      <div class="mov-val ${neto >= 0 ? 'pos' : 'neg'}">${fmt(neto)}</div>
+    </div>`;
+
+  if (d.movNote && d.movNote[lang]) {
+    html += `<div class="mov-note">${d.movNote[lang]}</div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+function render() {
+  const t = T[lang];
+  const month = document.getElementById('month-sel').value || 'may.-26';
+  const d = DATA[month];
+
+  document.getElementById('month-sel').innerHTML =
+    MONTHS.map(m => `<option value="${m}"${m===month?' selected':''}>${t.meses[m]}</option>`).join('');
+
+  document.getElementById('lbl-resumen').textContent        = t.resumen;
+  document.getElementById('lbl-capital').textContent        = t.capital;
+  document.getElementById('lbl-cierre-ant').textContent     = t.cierreAnt;
+  document.getElementById('lbl-rend-mes').textContent       = t.rendMes;
+  document.getElementById('lbl-ingresos').textContent       = t.ingresos;
+  document.getElementById('lbl-egresos').textContent        = t.egresos;
+  document.getElementById('lbl-rend-total').textContent     = t.rendTotal;
+  document.getElementById('lbl-evolucion').textContent      = t.evolucion;
+  document.getElementById('lbl-legend-total').textContent   = t.legendTotal;
+  document.getElementById('lbl-diversificacion').textContent= t.diversificacion;
+  document.getElementById('lbl-fondos').textContent         = t.fondos;
+  document.getElementById('lbl-renta-fija').textContent     = t.rentaFija;
+  document.getElementById('lbl-acciones').textContent       = t.acciones;
+  document.getElementById('lbl-crypto').textContent         = t.crypto;
+  document.getElementById('lbl-movimientos').textContent    = t.movimientos;
+  document.getElementById('footer-date').textContent        = t.meses[month];
+
+  document.getElementById('val-capital').textContent    = fmt(d.capital);
+  document.getElementById('val-cierre-ant').textContent = fmt(d.cierreAnt);
+  document.getElementById('val-rend-mes').textContent   = fmt(d.rendMes);
+  document.getElementById('val-ingresos').textContent   = fmt(d.ingresos);
+  document.getElementById('val-egresos').textContent    = fmt(d.egresos);
+  document.getElementById('val-rend-total').textContent = d.rendTotal || '—';
+
+  const badge = document.getElementById('val-rend-pct');
+  if (d.rendPct) {
+    badge.textContent = d.rendPct;
+    badge.style.background = d.rendMes >= 0 ? 'var(--dorado)' : '#fde8e8';
+    badge.style.color      = d.rendMes >= 0 ? 'var(--verde2)' : '#c0392b';
+  } else {
+    badge.textContent = '—';
+    badge.style.background = '#eee';
+    badge.style.color = '#999';
+  }
+
+  buildFundTable('tbl-rf',     d.rf,     t);
+  buildFundTable('tbl-kt',     d.kt,     t);
+  buildFundTable('tbl-crypto', d.crypto, t);
+  buildMovimientos(d, t);
+
+  ['rf','kt','crypto'].forEach(id => {
+    const box = document.getElementById('comment-' + id);
+    const comment = d[id].comment;
+    if (comment) { box.style.display = 'block'; box.textContent = comment; }
+    else box.style.display = 'none';
+  });
+
+  const monthIdx = EVOL_ALL.findIndex(e => e.mes === month);
+  const evolSlice = EVOL_ALL.slice(0, monthIdx + 1);
+
+  if (lineChart) lineChart.destroy();
+  lineChart = new Chart(document.getElementById('lineChart'), {
+    type: 'line',
+    data: {
+      labels: evolSlice.map(e => e.mes),
+      datasets: [{
+        label: t.legendTotal,
+        data: evolSlice.map(e => e.total),
+        borderColor: '#F5C842', backgroundColor: 'rgba(245,200,66,0.08)',
+        borderWidth: 2.5, pointBackgroundColor: '#F5C842',
+        pointBorderColor: '#fff', pointBorderWidth: 2,
+        pointRadius: evolSlice.length > 12 ? 2 : 4,
+        tension: 0.3, fill: true
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + fmt(ctx.parsed.y) } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { family:'Montserrat', size:9 }, color:'#5a6a5f', maxTicksLimit:8 } },
+        y: { grid: { color:'rgba(0,0,0,0.05)' }, ticks: { font: { family:'Montserrat', size:9 }, color:'#5a6a5f', callback: v => 'US$'+Number(v).toLocaleString('es-AR') } }
+      }
+    }
+  });
+
+  document.getElementById('pie-legend').innerHTML = DIV.map(item => `
+    <div class="legend-item">
+      <div class="legend-dot" style="background:${item.color}"></div>
+      <div>
+        <div class="legend-pct" style="color:${item.color==='#F5C842'?'#a07800':item.color==='#9b6fd4'?'#9b6fd4':item.color==='#b8d4c4'?'#5a6a5f':'var(--verde)'}">${item.pct}%</div>
+        <div class="legend-name">${item.label}</div>
+        <div class="legend-val">${fmt(item.valor)}</div>
+      </div>
+    </div>`).join('');
+
+  if (pieChart) pieChart.destroy();
+  pieChart = new Chart(document.getElementById('pieChart'), {
+    type: 'doughnut',
+    data: {
+      labels: DIV.map(i => i.label),
+      datasets: [{ data: DIV.map(i => i.pct), backgroundColor: DIV.map(i => i.color), borderWidth: 3, borderColor: '#fff' }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '68%',
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.label+': '+DIV[ctx.dataIndex].pct+'%' } } }
+    }
+  });
+}
+
+document.getElementById('month-sel').innerHTML =
+  MONTHS.map((m,i) => `<option value="${m}"${i===MONTHS.length-1?' selected':''}>${T['es'].meses[m]}</option>`).join('');
+render();
+</script>
+</body>
+</html>
