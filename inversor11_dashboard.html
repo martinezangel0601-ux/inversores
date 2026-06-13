@@ -63,17 +63,7 @@
   .fund-table .td-val.neg { color: #c0392b; }
   .comment-box { margin-top: 12px; background: var(--verde-light); border-left: 3px solid var(--verde); border-radius: 0 8px 8px 0; padding: 10px 14px; font-size: 11px; color: var(--muted); line-height: 1.6; display: none; }
 
-  .rent-highlight {
-    margin-top: 16px;
-    background: #fffbe6;
-    border-radius: 10px;
-    padding: 14px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .rent-highlight-label { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
-  .rent-highlight-val { font-size: 28px; font-weight: 800; color: #a07800; letter-spacing: -0.5px; }
+
 
   .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; gap: 16px; }
   .loading-spinner { width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--verde); border-radius: 50%; animation: spin 0.8s linear infinite; }
@@ -168,10 +158,6 @@
       <p class="section-label" id="lbl-renta-fija"></p>
       <table class="fund-table" id="tbl-rf"></table>
       <div class="comment-box" id="comment-rf"></div>
-      <div class="rent-highlight">
-        <span class="rent-highlight-label" id="lbl-rentabilidad"></span>
-        <span class="rent-highlight-val" id="val-rentabilidad">—</span>
-      </div>
     </div>
   </div>
 </main>
@@ -193,9 +179,9 @@ const T = {
     rendMes: 'Rendimientos del mes', ingresos: 'Ingresos', egresos: 'Egresos', comisiones: 'Comisiones',
     evolucion: 'Evolución del capital', legendTotal: 'Capital total',
     compSub: 'Cartera 100% en Renta Fija',
-    rentaFija: 'Fondo Renta Fija', rentabilidad: 'Rentabilidad mensual',
+    rentaFija: 'Fondo Renta Fija',
     filaCierre: 'Cierre mes anterior', filaRend: 'Rendimientos', filaIng: 'Ingresos',
-    filaEgr: 'Egresos', filaCom: 'Comisiones', filaCap: 'Capital actual',
+    filaEgr: 'Egresos', filaCom: 'Comisiones', filaCap: 'Capital actual', filaRent: 'Rentabilidad',
     meses: {
       'junio 2026':'Junio 2026','mayo 2026':'Mayo 2026','abril 2026':'Abril 2026',
       'marzo 2026':'Marzo 2026','febrero 2026':'Febrero 2026','enero 2026':'Enero 2026',
@@ -209,9 +195,9 @@ const T = {
     rendMes: 'Monthly returns', ingresos: 'Deposits', egresos: 'Withdrawals', comisiones: 'Fees',
     evolucion: 'Capital evolution', legendTotal: 'Total capital',
     compSub: '100% Fixed Income portfolio',
-    rentaFija: 'Fixed Income Fund', rentabilidad: 'Monthly yield',
+    rentaFija: 'Fixed Income Fund',
     filaCierre: 'Previous close', filaRend: 'Returns', filaIng: 'Deposits',
-    filaEgr: 'Withdrawals', filaCom: 'Fees', filaCap: 'Current capital',
+    filaEgr: 'Withdrawals', filaCom: 'Fees', filaCap: 'Current capital', filaRent: 'Yield',
     meses: {
       'junio 2026':'June 2026','mayo 2026':'May 2026','abril 2026':'April 2026',
       'marzo 2026':'March 2026','febrero 2026':'February 2026','enero 2026':'January 2026',
@@ -430,7 +416,8 @@ function buildFundTable(fund, t) {
     { label: t.filaIng,    val: fmt(fund.ing),        cls: '' },
     { label: t.filaEgr,    val: fmt(fund.egr),        cls: fund.egr < 0 ? 'neg' : '' },
     { label: t.filaCom,    val: fmt(fund.com),        cls: fund.com < 0 ? 'neg' : '' },
-    { label: t.filaCap,    val: fmt(fund.capital),    cls: 'total' }
+    { label: t.filaCap,    val: fmt(fund.capital),    cls: 'total' },
+    { label: t.filaRent,   val: fund.rent || '—',     cls: fund.rent ? (fund.rent.startsWith('-') ? 'neg' : 'pos') : '' }
   ];
   document.getElementById('tbl-rf').innerHTML =
     '<tbody>' + rows.map(r =>
@@ -458,7 +445,6 @@ function render() {
   document.getElementById('lbl-legend-total').textContent= t.legendTotal;
   document.getElementById('lbl-comp-sub').textContent    = t.compSub;
   document.getElementById('lbl-renta-fija').textContent  = t.rentaFija;
-  document.getElementById('lbl-rentabilidad').textContent= t.rentabilidad;
   document.getElementById('footer-date').textContent     = t.meses[month] || month;
 
   document.getElementById('val-capital').textContent    = fmt(d.capital);
@@ -467,7 +453,6 @@ function render() {
   document.getElementById('val-ingresos').textContent   = fmt(d.ingresos);
   document.getElementById('val-egresos').textContent    = fmt(d.egresos);
   document.getElementById('val-comisiones').textContent = fmt(d.comisiones);
-  document.getElementById('val-rentabilidad').textContent = (d.rf && d.rf.rent) || '—';
 
   const badge = document.getElementById('val-rend-pct');
   if (d.rendPct) {
