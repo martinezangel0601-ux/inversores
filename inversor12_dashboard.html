@@ -44,10 +44,10 @@
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
 
-  /* Barchart comparativa */
-  .bar-legend { display: flex; gap: 20px; margin-bottom: 12px; }
-  .bar-legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); font-weight: 500; }
-  .bar-swatch { width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0; }
+  /* Line chart evolución */
+  .line-legend { display: flex; gap: 20px; margin-bottom: 12px; }
+  .line-legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); font-weight: 500; }
+  .swatch { width: 24px; height: 3px; border-radius: 2px; flex-shrink: 0; }
 
   .pie-area { display: flex; align-items: center; justify-content: center; gap: 28px; margin-top: 8px; }
   .pie-canvas-wrap { position: relative; width: 150px; height: 150px; flex-shrink: 0; }
@@ -139,19 +139,15 @@
 
     <div class="two-col">
       <div class="card">
-        <p class="section-label" id="lbl-comparativa"></p>
-        <div class="bar-legend">
-          <div class="bar-legend-item">
-            <div class="bar-swatch" style="background:rgba(44,98,63,0.7)"></div>
-            <span id="lbl-bar-prev"></span>
-          </div>
-          <div class="bar-legend-item">
-            <div class="bar-swatch" style="background:#F5C842"></div>
-            <span id="lbl-bar-curr"></span>
+        <p class="section-label" id="lbl-evolucion"></p>
+        <div class="line-legend">
+          <div class="line-legend-item">
+            <div class="swatch" style="background:var(--verde)"></div>
+            <span id="lbl-legend-total"></span>
           </div>
         </div>
         <div style="position:relative;width:100%;height:200px">
-          <canvas id="barChart"></canvas>
+          <canvas id="lineChart"></canvas>
         </div>
       </div>
       <div class="card">
@@ -200,12 +196,11 @@ const T = {
     resumen: 'Resumen del mes', capital: 'Capital total', cierreAnt: 'Cierre anterior',
     rendMes: 'Rendimientos del mes', ingresos: 'Ingresos', egresos: 'Egresos',
     rendTotal: 'Rendimiento total histórico',
-    comparativa: 'Comparativa mensual',
+    evolucion: 'Evolución del capital', legendTotal: 'Capital total',
     diversificacion: 'Diversificación de la cartera',
     rentaFija: 'Fondo Renta Fija', acciones: 'Acciones KT',
     filaCierre: 'Cierre mes anterior', filaRend: 'Rendimientos', filaIng: 'Ingresos',
     filaEgr: 'Egresos', filaCom: 'Comisiones', filaCap: 'Capital actual', filaRent: 'Rentabilidad',
-    barLabels: ['Capital total', 'Rendimientos', 'Renta Fija', 'Acciones KT'],
     meses: {
       'noviembre 2025':'Noviembre 2025','diciembre 2025':'Diciembre 2025','enero 2026':'Enero 2026',
       'febrero 2026':'Febrero 2026','marzo 2026':'Marzo 2026','abril 2026':'Abril 2026',
@@ -218,12 +213,11 @@ const T = {
     resumen: 'Monthly summary', capital: 'Total capital', cierreAnt: 'Previous close',
     rendMes: 'Monthly returns', ingresos: 'Deposits', egresos: 'Withdrawals',
     rendTotal: 'Total historical return',
-    comparativa: 'Monthly comparison',
+    evolucion: 'Capital evolution', legendTotal: 'Total capital',
     diversificacion: 'Portfolio allocation',
     rentaFija: 'Fixed Income Fund', acciones: 'KT Equities',
     filaCierre: 'Previous close', filaRend: 'Returns', filaIng: 'Deposits',
     filaEgr: 'Withdrawals', filaCom: 'Fees', filaCap: 'Current capital', filaRent: 'Yield',
-    barLabels: ['Total capital', 'Returns', 'Fixed Income', 'KT Equities'],
     meses: {
       'noviembre 2025':'November 2025','diciembre 2025':'December 2025','enero 2026':'January 2026',
       'febrero 2026':'February 2026','marzo 2026':'March 2026','abril 2026':'April 2026',
@@ -236,7 +230,7 @@ const T = {
 // ESTADO GLOBAL
 // ============================================================
 let lang = 'es';
-let barChart = null, pieChart = null;
+let lineChart = null, pieChart = null;
 let RAW    = null;
 let MONTHS = [];
 let DATA   = {};
@@ -419,26 +413,6 @@ function processData() {
     }
   }
 
-  // Suplementar MONTHS con meses posteriores al último de Resumen General
-  if (MONTHS.length > 0) {
-    const lastKnown   = MONTHS[MONTHS.length - 1];
-    const lastShort   = fullMonthToShort(lastKnown);
-    const lastEvolIdx = EVOL.findIndex(e => e.mes === lastShort);
-    if (lastEvolIdx >= 0) {
-      EVOL.slice(lastEvolIdx + 1).forEach(e => {
-        const fullMonth = shortMonthToFull(e.mes);
-        if (fullMonth && !MONTHS.includes(fullMonth)) {
-          MONTHS.push(fullMonth);
-          DATA[fullMonth] = {
-            capital: e.total, rendMes: null, rendPct: null, ingresos: null, egresos: null,
-            cierreAnt: null, rendTotal: null,
-            rf: emptyFund(), kt: emptyFund()
-          };
-        }
-      });
-    }
-  }
-
   // --- Diversificación ---
   DIV = [];
   const divData = RAW.diversificacion;
@@ -502,11 +476,6 @@ function render() {
 
   buildMonthOptions();
 
-  // Mes anterior (para la comparativa de barras)
-  const monthIdx = MONTHS.indexOf(month);
-  const prevMonth = monthIdx > 0 ? MONTHS[monthIdx - 1] : null;
-  const dPrev     = prevMonth ? DATA[prevMonth] : null;
-  const labelPrev = prevMonth ? (t.meses[prevMonth] || prevMonth) : '—';
   const labelCurr = t.meses[month] || month;
 
   // Labels
@@ -517,9 +486,8 @@ function render() {
   document.getElementById('lbl-ingresos').textContent        = t.ingresos;
   document.getElementById('lbl-egresos').textContent         = t.egresos;
   document.getElementById('lbl-rend-total').textContent      = t.rendTotal;
-  document.getElementById('lbl-comparativa').textContent     = t.comparativa;
-  document.getElementById('lbl-bar-prev').textContent        = labelPrev;
-  document.getElementById('lbl-bar-curr').textContent        = labelCurr;
+  document.getElementById('lbl-evolucion').textContent       = t.evolucion;
+  document.getElementById('lbl-legend-total').textContent    = t.legendTotal;
   document.getElementById('lbl-diversificacion').textContent = t.diversificacion;
   document.getElementById('lbl-renta-fija').textContent      = t.rentaFija;
   document.getElementById('lbl-acciones').textContent        = t.acciones;
@@ -555,32 +523,21 @@ function render() {
     else box.style.display = 'none';
   });
 
-  // Gráfico de barras — mes anterior vs mes actual (dinámico)
-  const barDataCurr = [d.capital, d.rendMes, d.rf ? d.rf.capital : null, d.kt ? d.kt.capital : null];
-  const barDataPrev = dPrev
-    ? [dPrev.capital, dPrev.rendMes, dPrev.rf ? dPrev.rf.capital : null, dPrev.kt ? dPrev.kt.capital : null]
-    : null;
-
-  const datasets = [];
-  if (barDataPrev) {
-    datasets.push({
-      label: labelPrev,
-      data: barDataPrev,
-      backgroundColor: 'rgba(44,98,63,0.7)', borderColor: '#2C623F',
-      borderWidth: 1.5, borderRadius: 4
-    });
-  }
-  datasets.push({
-    label: labelCurr,
-    data: barDataCurr,
-    backgroundColor: '#F5C842', borderColor: '#e6b830',
-    borderWidth: 1.5, borderRadius: 4
-  });
-
-  if (barChart) barChart.destroy();
-  barChart = new Chart(document.getElementById('barChart'), {
-    type: 'bar',
-    data: { labels: t.barLabels, datasets },
+  // Gráfico de línea — toda la historia de Evolución Capitales
+  if (lineChart) lineChart.destroy();
+  lineChart = new Chart(document.getElementById('lineChart'), {
+    type: 'line',
+    data: {
+      labels: EVOL.map(e => e.mes),
+      datasets: [{
+        label: t.legendTotal,
+        data: EVOL.map(e => e.total),
+        borderColor: '#2C623F', backgroundColor: 'rgba(44,98,63,0.08)',
+        borderWidth: 2.5, pointBackgroundColor: '#2C623F',
+        pointBorderColor: '#fff', pointBorderWidth: 2, pointRadius: 4,
+        tension: 0.3, fill: true
+      }]
+    },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
@@ -589,7 +546,7 @@ function render() {
       },
       scales: {
         x: { grid: { display: false }, ticks: { font: { family:'Montserrat', size:10 }, color:'#5a6a5f' } },
-        y: { grid: { color:'rgba(0,0,0,0.05)' }, ticks: { font: { family:'Montserrat', size:9 }, color:'#5a6a5f', callback: v => 'US$'+Number(v).toLocaleString('es-AR') } }
+        y: { grid: { color:'rgba(0,0,0,0.05)' }, ticks: { font: { family:'Montserrat', size:10 }, color:'#5a6a5f', callback: v => 'US$'+Number(v).toLocaleString('es-AR') } }
       }
     }
   });
