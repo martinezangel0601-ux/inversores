@@ -484,8 +484,8 @@ function render() {
   if (d.crypto) {
     cryptoSection.style.display = 'block';
     document.getElementById('val-kpi-cap').textContent  = fmt(d.crypto.capital);
-    document.getElementById('val-kpi-rent').textContent = d.crypto.rent || '—';
-    document.getElementById('val-kpi-rend').textContent = fmt(d.crypto.rend);
+    document.getElementById('val-kpi-rent').textContent = d.rendPct || d.crypto.rent || '—';
+    document.getElementById('val-kpi-rend').textContent = fmt(d.rendMes);
     const comment = document.getElementById('comment-crypto');
     if (d.crypto.comment) { comment.style.display = 'block'; comment.textContent = d.crypto.comment; }
     else comment.style.display = 'none';
