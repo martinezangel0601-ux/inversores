@@ -375,6 +375,29 @@ function processData() {
     mes: MONTH_SHORT[m] || m,
     total: DATA[m].capital
   })).filter(e => e.total !== null);
+
+  // Extender con Evolución Capitales si tiene meses más recientes
+  const evolData = RAW.evolucionCapitales;
+  if (evolData && evolData.length > 2) {
+    const headerRow0 = evolData[0];
+    let colIdx = -1;
+    for (let i = 0; i < headerRow0.length; i++) {
+      if (headerRow0[i] === INVERSOR_KEY) { colIdx = i; break; }
+    }
+    if (colIdx >= 0) {
+      const fullEvol = [];
+      for (let r = 2; r < evolData.length; r++) {
+        const row = evolData[r];
+        const mes = row[0];
+        const total = parseNum(row[colIdx]);
+        if (mes && total !== null) fullEvol.push({ mes, total });
+      }
+      // Agregar meses de fullEvol que no estén ya en EVOL (más recientes)
+      fullEvol.forEach(e => {
+        if (!EVOL.find(x => x.mes === e.mes)) EVOL.push(e);
+      });
+    }
+  }
 }
 
 function buildMonthOptions() {
@@ -469,7 +492,8 @@ function render() {
 
   const shortMonth = MONTH_SHORT[month];
   const monthIdx = EVOL.findIndex(e => e.mes === shortMonth);
-  const evolSlice = monthIdx >= 0 ? EVOL.slice(0, monthIdx + 1) : EVOL;
+  const isLastSelectedMonth = month === MONTHS[MONTHS.length - 1];
+  const evolSlice = isLastSelectedMonth ? EVOL : (monthIdx >= 0 ? EVOL.slice(0, monthIdx + 1) : EVOL);
 
   if (lineChart) lineChart.destroy();
   lineChart = new Chart(document.getElementById('lineChart'), {
