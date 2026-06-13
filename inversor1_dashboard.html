@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DelInversor — DI-W5N8J3</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --verde: #2C623F; --verde2: #1e4a2e; --verde-light: #e8f2ec;
+    --dorado: #F5C842; --dorado2: #e6b830;
+    --bg: #f4f6f3; --card: #ffffff; --text: #1a1a1a; --muted: #5a6a5f; --border: #d4e0d8;
+    --font: 'Montserrat', sans-serif;
+  }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+  .header { background: var(--verde); padding: 20px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+  .header-left { display: flex; flex-direction: column; gap: 3px; }
+  .brand { font-size: 10px; font-weight: 800; letter-spacing: 3px; color: rgba(255,255,255,0.5); text-transform: uppercase; }
+  .inv-name { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+  .header-controls { display: flex; align-items: center; gap: 12px; }
+  .lang-toggle { display: flex; border: 1.5px solid rgba(255,255,255,0.25); border-radius: 8px; overflow: hidden; }
+  .lang-btn { background: transparent; border: none; color: rgba(255,255,255,0.55); font-family: var(--font); font-size: 11px; font-weight: 700; padding: 6px 14px; cursor: pointer; transition: all 0.2s; letter-spacing: 1px; }
+  .lang-btn.active { background: var(--dorado); color: var(--verde2); }
+  .lang-btn:not(.active):hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .month-sel { background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.25); border-radius: 8px; color: #fff; font-family: var(--font); font-size: 12px; font-weight: 600; padding: 6px 32px 6px 14px; cursor: pointer; outline: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.7)' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; background-color: rgba(255,255,255,0.12); }
+  .month-sel option { background: var(--verde2); color: #fff; }
+
+  .main { padding: 24px 32px; flex: 1; }
+  .section-label { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+
+  .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .metric-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; position: relative; overflow: hidden; }
+  .metric-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--verde); }
+  .metric-card.highlight::before { background: var(--dorado); }
+  .metric-label { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .metric-value { font-size: 26px; font-weight: 700; color: var(--verde); letter-spacing: -0.5px; line-height: 1; margin-bottom: 6px; }
+  .metric-sub-label { font-size: 10px; color: var(--muted); font-weight: 500; margin-top: 10px; margin-bottom: 3px; }
+  .metric-sub-value { font-size: 14px; font-weight: 600; color: var(--text); }
+  .badge { display: inline-block; background: var(--dorado); color: var(--verde2); font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+
+  .line-legend { display: flex; gap: 20px; margin-bottom: 12px; }
+  .line-legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); font-weight: 500; }
+  .swatch { width: 24px; height: 3px; border-radius: 2px; flex-shrink: 0; }
+
+  /* Composición 100% */
+  .comp-card { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: var(--verde-light); border-color: #c9e0d3; }
+  .comp-pct { font-size: 64px; font-weight: 800; color: var(--verde); letter-spacing: -2px; line-height: 1; }
+  .comp-label { font-size: 14px; font-weight: 600; color: var(--muted); margin-top: 10px; }
+  .comp-sub { margin-top: 16px; font-size: 11px; color: var(--muted); max-width: 220px; line-height: 1.6; }
+
+  /* Renta fija destacado */
+  .fund-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 4px; }
+  .fund-table td { padding: 8px 4px; border-bottom: 1px solid var(--border); }
+  .fund-table tr:last-child td { border-bottom: none; }
+  .fund-table .td-label { color: var(--muted); font-weight: 500; }
+  .fund-table .td-val { text-align: right; font-weight: 600; color: var(--text); }
+  .fund-table .td-val.total { color: var(--verde); font-size: 15px; font-weight: 700; }
+  .fund-table .td-val.pos { color: #2C623F; }
+  .fund-table .td-val.neg { color: #c0392b; }
+
+  .rent-highlight {
+    margin-top: 16px;
+    background: #fffbe6;
+    border-radius: 10px;
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .rent-highlight-label { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+  .rent-highlight-val { font-size: 28px; font-weight: 800; color: #a07800; letter-spacing: -0.5px; }
+
+  .footer { background: var(--verde); padding: 12px 32px; display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+  .footer-brand { font-size: 11px; font-weight: 800; letter-spacing: 3px; color: rgba(255,255,255,0.5); text-transform: uppercase; }
+  .footer-date { font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 500; }
+
+  @media (max-width: 900px) {
+    .metrics-grid { grid-template-columns: repeat(2,1fr); }
+    .two-col { grid-template-columns: 1fr; }
+    .main { padding: 16px; }
+    .header { padding: 16px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <span class="brand">DelInversor</span>
+    <span class="inv-name">DI-W5N8J3</span>
+  </div>
+  <div class="header-controls">
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('es')">ES</button>
+      <button class="lang-btn" onclick="setLang('en')">EN</button>
+    </div>
+    <select class="month-sel" id="month-sel" onchange="render()"></select>
+  </div>
+</header>
+
+<main class="main">
+  <p class="section-label" id="lbl-resumen"></p>
+  <div class="metrics-grid">
+    <div class="metric-card highlight">
+      <div class="metric-label" id="lbl-capital"></div>
+      <div class="metric-value" id="val-capital">—</div>
+      <div class="metric-sub-label" id="lbl-cierre-ant"></div>
+      <div class="metric-sub-value" id="val-cierre-ant">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label" id="lbl-rend-mes"></div>
+      <div class="metric-value" id="val-rend-mes">—</div>
+      <div><span class="badge" id="val-rend-pct">—</span></div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label" id="lbl-ingresos"></div>
+      <div class="metric-value" id="val-ingresos">—</div>
+      <div class="metric-sub-label" id="lbl-egresos"></div>
+      <div class="metric-sub-value" id="val-egresos">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label" id="lbl-comisiones"></div>
+      <div class="metric-value" id="val-comisiones">—</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <p class="section-label" id="lbl-evolucion"></p>
+      <div class="line-legend">
+        <div class="line-legend-item">
+          <div class="swatch" style="background:#F5C842"></div>
+          <span id="lbl-legend-total"></span>
+        </div>
+      </div>
+      <div style="position:relative;width:100%;height:200px">
+        <canvas id="lineChart"></canvas>
+      </div>
+    </div>
+    <div class="card comp-card">
+      <div class="comp-pct">100%</div>
+      <div class="comp-label" id="lbl-comp-name">Fixed Income</div>
+      <div class="comp-sub" id="lbl-comp-sub"></div>
+    </div>
+  </div>
+
+  <div class="card" style="max-width:560px;margin:0 auto">
+    <p class="section-label" id="lbl-renta-fija"></p>
+    <table class="fund-table" id="tbl-rf"></table>
+    <div class="rent-highlight">
+      <span class="rent-highlight-label" id="lbl-rentabilidad"></span>
+      <span class="rent-highlight-val" id="val-rentabilidad">—</span>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <span class="footer-brand">DelInversor</span>
+  <span class="footer-date" id="footer-date"></span>
+</footer>
+
+<script>
+const T = {
+  es: {
+    resumen: 'Resumen del mes', capital: 'Capital total', cierreAnt: 'Cierre anterior',
+    rendMes: 'Rendimientos del mes', ingresos: 'Ingresos', egresos: 'Egresos', comisiones: 'Comisiones',
+    evolucion: 'Evolución del capital', legendTotal: 'Capital total',
+    compSub: 'Cartera 100% en Renta Fija',
+    rentaFija: 'Fondo Renta Fija', rentabilidad: 'Rentabilidad mensual',
+    filaCierre: 'Cierre mes anterior', filaRend: 'Rendimientos', filaIng: 'Ingresos',
+    filaEgr: 'Egresos', filaCom: 'Comisiones', filaCap: 'Capital actual',
+    meses: { 'jun.-26':'Junio 2026' }
+  },
+  en: {
+    resumen: 'Monthly summary', capital: 'Total capital', cierreAnt: 'Previous close',
+    rendMes: 'Monthly returns', ingresos: 'Deposits', egresos: 'Withdrawals', comisiones: 'Fees',
+    evolucion: 'Capital evolution', legendTotal: 'Total capital',
+    compSub: '100% Fixed Income portfolio',
+    rentaFija: 'Fixed Income Fund', rentabilidad: 'Monthly yield',
+    filaCierre: 'Previous close', filaRend: 'Returns', filaIng: 'Deposits',
+    filaEgr: 'Withdrawals', filaCom: 'Fees', filaCap: 'Current capital',
+    meses: { 'jun.-26':'June 2026' }
+  }
+};
+
+const MONTHS = ['jun.-26'];
+
+const EVOL_ALL = [
+  { mes:'mar.-25', total:570.00 },
+  { mes:'abr.-25', total:580.08 },
+  { mes:'may.-25', total:604.14 },
+  { mes:'jun.-25', total:601.49 },
+  { mes:'jul.-25', total:613.12 },
+  { mes:'ago.-25', total:624.54 },
+  { mes:'sep.-25', total:639.67 },
+  { mes:'oct.-25', total:649.04 },
+  { mes:'nov.-25', total:660.76 },
+  { mes:'dic.-25', total:675.24 },
+  { mes:'ene.-26', total:785.02 },
+  { mes:'feb.-26', total:799.09 },
+  { mes:'mar.-26', total:817.09 },
+  { mes:'abr.-26', total:836.61 },
+  { mes:'may.-26', total:848.74 },
+  { mes:'jun.-26', total:865.74 }
+];
+
+const DATA = {
+  'jun.-26': {
+    capital:865.73, rendMes:194.28, rendPct:'2.29%',
+    ingresos:0, egresos:0, comisiones:-2.43, cierreAnt:848.73,
+    rf: { cierreAnt:848.73, rend:194.28, ing:0, egr:0, com:-2.43, capital:865.73, rent:'2.29%' }
+  }
+};
+
+let lang = 'es';
+let lineChart = null;
+
+function fmt(n) {
+  if (n === null || n === undefined) return '—';
+  const abs = Math.abs(n);
+  const str = abs.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (n < 0 ? '-' : '') + 'US$ ' + str;
+}
+
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent === l.toUpperCase()));
+  render();
+}
+
+function buildFundTable(fund, t) {
+  const rows = [
+    { label: t.filaCierre, val: fmt(fund.cierreAnt), cls: '' },
+    { label: t.filaRend,   val: fmt(fund.rend),      cls: fund.rend >= 0 ? 'pos' : 'neg' },
+    { label: t.filaIng,    val: fmt(fund.ing),        cls: '' },
+    { label: t.filaEgr,    val: fmt(fund.egr),        cls: '' },
+    { label: t.filaCom,    val: fmt(fund.com),        cls: fund.com < 0 ? 'neg' : '' },
+    { label: t.filaCap,    val: fmt(fund.capital),    cls: 'total' }
+  ];
+  document.getElementById('tbl-rf').innerHTML =
+    '<tbody>' + rows.map(r =>
+      `<tr><td class="td-label">${r.label}</td><td class="td-val ${r.cls}">${r.val}</td></tr>`
+    ).join('') + '</tbody>';
+}
+
+function render() {
+  const t = T[lang];
+  const month = document.getElementById('month-sel').value || 'jun.-26';
+  const d = DATA[month];
+
+  document.getElementById('month-sel').innerHTML =
+    MONTHS.map(m => `<option value="${m}"${m===month?' selected':''}>${t.meses[m]}</option>`).join('');
+
+  document.getElementById('lbl-resumen').textContent     = t.resumen;
+  document.getElementById('lbl-capital').textContent     = t.capital;
+  document.getElementById('lbl-cierre-ant').textContent  = t.cierreAnt;
+  document.getElementById('lbl-rend-mes').textContent    = t.rendMes;
+  document.getElementById('lbl-ingresos').textContent    = t.ingresos;
+  document.getElementById('lbl-egresos').textContent     = t.egresos;
+  document.getElementById('lbl-comisiones').textContent  = t.comisiones;
+  document.getElementById('lbl-evolucion').textContent   = t.evolucion;
+  document.getElementById('lbl-legend-total').textContent= t.legendTotal;
+  document.getElementById('lbl-comp-sub').textContent    = t.compSub;
+  document.getElementById('lbl-renta-fija').textContent  = t.rentaFija;
+  document.getElementById('lbl-rentabilidad').textContent= t.rentabilidad;
+  document.getElementById('footer-date').textContent     = t.meses[month];
+
+  document.getElementById('val-capital').textContent    = fmt(d.capital);
+  document.getElementById('val-cierre-ant').textContent = fmt(d.cierreAnt);
+  document.getElementById('val-rend-mes').textContent   = fmt(d.rendMes);
+  document.getElementById('val-ingresos').textContent   = fmt(d.ingresos);
+  document.getElementById('val-egresos').textContent    = fmt(d.egresos);
+  document.getElementById('val-comisiones').textContent = fmt(d.comisiones);
+  document.getElementById('val-rentabilidad').textContent = d.rf.rent;
+
+  const badge = document.getElementById('val-rend-pct');
+  badge.textContent = d.rendPct;
+  badge.style.background = d.rendMes >= 0 ? 'var(--dorado)' : '#fde8e8';
+  badge.style.color      = d.rendMes >= 0 ? 'var(--verde2)' : '#c0392b';
+
+  buildFundTable(d.rf, t);
+
+  const monthIdx = EVOL_ALL.findIndex(e => e.mes === month);
+  const evolSlice = EVOL_ALL.slice(0, monthIdx + 1);
+
+  if (lineChart) lineChart.destroy();
+  lineChart = new Chart(document.getElementById('lineChart'), {
+    type: 'line',
+    data: {
+      labels: evolSlice.map(e => e.mes),
+      datasets: [{
+        label: t.legendTotal,
+        data: evolSlice.map(e => e.total),
+        borderColor: '#F5C842', backgroundColor: 'rgba(245,200,66,0.08)',
+        borderWidth: 2.5, pointBackgroundColor: '#F5C842',
+        pointBorderColor: '#fff', pointBorderWidth: 2,
+        pointRadius: evolSlice.length > 10 ? 2 : 4,
+        tension: 0.3, fill: true
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + fmt(ctx.parsed.y) } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { family:'Montserrat', size:9 }, color:'#5a6a5f', maxTicksLimit:8 } },
+        y: { grid: { color:'rgba(0,0,0,0.05)' }, ticks: { font: { family:'Montserrat', size:9 }, color:'#5a6a5f', callback: v => 'US$'+Number(v).toLocaleString('es-AR') } }
+      }
+    }
+  });
+}
+
+document.getElementById('month-sel').innerHTML =
+  MONTHS.map((m,i) => `<option value="${m}"${i===MONTHS.length-1?' selected':''}>${T['es'].meses[m]}</option>`).join('');
+render();
+</script>
+</body>
+</html>
