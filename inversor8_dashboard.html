@@ -362,34 +362,53 @@ function processData() {
     total: DATA[m].capital
   })).filter(e => e.total !== null);
 
-  // Extender con Evolución Capitales solo con meses posteriores al último ya incluido
+  // Extender con Evolución Capitales
   const evolData = RAW.evolucionCapitales;
-  if (evolData && evolData.length > 2 && EVOL.length > 0) {
+  if (evolData && evolData.length > 2) {
     const headerRow0 = evolData[0];
     let colIdx = -1;
     for (let i = 0; i < headerRow0.length; i++) {
       if (String(headerRow0[i]).trim() === INVERSOR_KEY) { colIdx = i; break; }
     }
     if (colIdx >= 0) {
-      const lastShort = EVOL[EVOL.length - 1].mes;
-      const lastRowIdx = evolData.findIndex(r => r[0] === lastShort);
-      if (lastRowIdx >= 0) {
-        for (let r = lastRowIdx + 1; r < evolData.length; r++) {
-          const row = evolData[r];
-          const mes = row[0];
-          if (colIdx >= row.length) continue;
-          const total = parseNum(row[colIdx]);
-          if (mes && total !== null) EVOL.push({ mes, total });
+      const fullHist = [];
+      for (let r = 2; r < evolData.length; r++) {
+        const row = evolData[r];
+        const mes = row[0];
+        if (colIdx >= row.length) continue;
+        const total = parseNum(row[colIdx]);
+        if (mes && total !== null) fullHist.push({ mes, total });
+      }
+
+      if (fullHist.length > EVOL.length) {
+        // Evolución Capitales tiene más historial -> usarlo como base
+        // pero conservar el valor del último mes desde Resumen General si existe (más actualizado)
+        if (EVOL.length > 0) {
+          const lastEvol = EVOL[EVOL.length - 1];
+          const idxInFull = fullHist.findIndex(e => e.mes === lastEvol.mes);
+          if (idxInFull >= 0) {
+            fullHist[idxInFull].total = lastEvol.total;
+            EVOL = fullHist.slice(0, idxInFull + 1);
+            // agregar meses posteriores si los hubiera
+            for (let i = idxInFull + 1; i < fullHist.length; i++) EVOL.push(fullHist[i]);
+          } else {
+            EVOL = fullHist;
+          }
+        } else {
+          EVOL = fullHist;
         }
-      } else {
-        // Si no se encontró el último mes (primera carga), tomar todo el historial disponible
-        EVOL = [];
-        for (let r = 2; r < evolData.length; r++) {
-          const row = evolData[r];
-          const mes = row[0];
-          if (colIdx >= row.length) continue;
-          const total = parseNum(row[colIdx]);
-          if (mes && total !== null) EVOL.push({ mes, total });
+      } else if (EVOL.length > 0) {
+        // EVOL ya tiene suficiente, solo agregar meses posteriores
+        const lastShort = EVOL[EVOL.length - 1].mes;
+        const lastRowIdx = evolData.findIndex(r => r[0] === lastShort);
+        if (lastRowIdx >= 0) {
+          for (let r = lastRowIdx + 1; r < evolData.length; r++) {
+            const row = evolData[r];
+            const mes = row[0];
+            if (colIdx >= row.length) continue;
+            const total = parseNum(row[colIdx]);
+            if (mes && total !== null) EVOL.push({ mes, total });
+          }
         }
       }
     }
