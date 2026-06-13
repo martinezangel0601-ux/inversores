@@ -426,7 +426,7 @@ function processData() {
   EVOL = [];
   const evolData = RAW.evolucionCapitales;
   if (evolData && evolData.length > 2) {
-    // Encontrar la columna del Inversor 3
+    // Encontrar la columna del inversor en el sheet
     const headerRow0 = evolData[0]; // nombres de inversores
     const headerRow1 = evolData[1]; // Capital Total / Capital Invertido / Rendimientos totales
 
@@ -469,6 +469,42 @@ function processData() {
       }
     }
   });
+
+  // Suplementar MONTHS con meses de evolucionCapitales que vengan DESPUES del ultimo mes
+  // conocido en Resumen General. Evita traer meses historicos de otros periodos.
+  if (MONTHS.length > 0) {
+    const EVOL_ABBR = {
+      'ene.':'enero','feb.':'febrero','mar.':'marzo','abr.':'abril',
+      'may.':'mayo','jun.':'junio','jul.':'julio','ago.':'agosto',
+      'sep.':'septiembre','oct.':'octubre','nov.':'noviembre','dic.':'diciembre'
+    };
+    const lastKnown = MONTHS[MONTHS.length - 1];
+    const lastEvolIdx = EVOL.findIndex(e => {
+      const parts = e.mes.split('-');
+      if (parts.length !== 2) return false;
+      const nombre = EVOL_ABBR[parts[0]];
+      if (!nombre) return false;
+      return (nombre + ' 20' + parts[1]) === lastKnown;
+    });
+    if (lastEvolIdx >= 0) {
+      EVOL.slice(lastEvolIdx + 1).forEach(e => {
+        const parts = e.mes.split('-');
+        if (parts.length !== 2) return;
+        const mesNombre = EVOL_ABBR[parts[0]];
+        if (!mesNombre) return;
+        const fullMonth = mesNombre + ' 20' + parts[1];
+        if (!MONTHS.includes(fullMonth)) {
+          MONTHS.push(fullMonth);
+          DATA[fullMonth] = {
+            capital: e.total,
+            rendMes: null, rendPct: null, ingresos: null, egresos: null,
+            cierreAnt: null, rendTotal: null,
+            rf: emptyFund(), kt: emptyFund(), ib: emptyFund(), crypto: emptyFund()
+          };
+        }
+      });
+    }
+  }
 
   // --- Diversificación ---
   DIV = [];
