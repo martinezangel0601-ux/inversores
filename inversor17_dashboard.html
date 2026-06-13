@@ -31,6 +31,7 @@
   .main { padding: 24px 32px; flex: 1; }
   .section-label { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
 
+  /* 3 cards para este inversor */
   .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
   .metric-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; position: relative; overflow: hidden; }
   .metric-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--verde); }
@@ -48,8 +49,6 @@
   .line-legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); font-weight: 500; }
   .swatch { width: 24px; height: 3px; border-radius: 2px; flex-shrink: 0; }
 
-  /* Fondo único centrado */
-  .fondo-unico { max-width: 520px; margin: 0 auto; }
   .fund-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 4px; }
   .fund-table td { padding: 8px 4px; border-bottom: 1px solid var(--border); }
   .fund-table tr:last-child td { border-bottom: none; }
@@ -58,19 +57,20 @@
   .fund-table .td-val.total { color: var(--verde); font-size: 15px; font-weight: 700; }
   .fund-table .td-val.pos { color: #2C623F; }
   .fund-table .td-val.neg { color: #c0392b; }
+  .comment-box { margin-top: 10px; background: var(--verde-light); border-left: 3px solid var(--verde); border-radius: 0 8px 8px 0; padding: 9px 12px; font-size: 11px; color: var(--muted); line-height: 1.6; display: none; }
 
   /* KPI rentabilidad destacado */
-  .rent-highlight {
-    margin-top: 16px;
-    background: #fffbe6;
-    border-radius: 10px;
-    padding: 14px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
+  .rent-highlight { margin-top: 16px; background: #fffbe6; border-radius: 10px; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; }
   .rent-highlight-label { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
   .rent-highlight-val { font-size: 28px; font-weight: 800; color: #a07800; letter-spacing: -0.5px; }
+
+  .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; gap: 16px; }
+  .loading-spinner { width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--verde); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .error-box { background: #fde8e8; border: 1px solid #f5b8b8; border-radius: 10px; padding: 16px 20px; color: #c0392b; font-size: 13px; font-weight: 500; text-align: center; margin: 20px 0; }
+
+  .content { display: none; }
 
   .footer { background: var(--verde); padding: 12px 32px; display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
   .footer-brand { font-size: 11px; font-weight: 800; letter-spacing: 3px; color: rgba(255,255,255,0.5); text-transform: uppercase; }
@@ -101,44 +101,52 @@
 </header>
 
 <main class="main">
-  <p class="section-label" id="lbl-resumen"></p>
-  <div class="metrics-grid">
-    <div class="metric-card highlight">
-      <div class="metric-label" id="lbl-capital"></div>
-      <div class="metric-value" id="val-capital">—</div>
-      <div class="metric-sub-label" id="lbl-cierre-ant"></div>
-      <div class="metric-sub-value" id="val-cierre-ant">—</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-label" id="lbl-rend-mes"></div>
-      <div class="metric-value" id="val-rend-mes">—</div>
-      <div><span class="badge" id="val-rend-pct">—</span></div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-label" id="lbl-invertido"></div>
-      <div class="metric-value" id="val-invertido">—</div>
-      <div class="metric-sub-label" id="lbl-ganancia"></div>
-      <div class="metric-sub-value" id="val-ganancia">—</div>
-    </div>
+  <div class="loading" id="loading">
+    <div class="loading-spinner"></div>
+    <div class="loading-text" id="loading-text">Cargando datos...</div>
   </div>
 
-  <div class="two-col">
-    <div class="card">
-      <p class="section-label" id="lbl-evolucion"></p>
-      <div class="line-legend">
-        <div class="line-legend-item">
-          <div class="swatch" style="background:#F5C842"></div>
-          <span id="lbl-legend-total"></span>
-        </div>
+  <div class="error-box" id="error-box" style="display:none"></div>
+
+  <div class="content" id="content">
+    <p class="section-label" id="lbl-resumen"></p>
+    <div class="metrics-grid">
+      <div class="metric-card highlight">
+        <div class="metric-label" id="lbl-capital"></div>
+        <div class="metric-value" id="val-capital">—</div>
+        <div class="metric-sub-label" id="lbl-cierre-ant"></div>
+        <div class="metric-sub-value" id="val-cierre-ant">—</div>
       </div>
-      <div style="position:relative;width:100%;height:200px">
-        <canvas id="lineChart"></canvas>
+      <div class="metric-card">
+        <div class="metric-label" id="lbl-rend-mes"></div>
+        <div class="metric-value" id="val-rend-mes">—</div>
+        <div><span class="badge" id="val-rend-pct">—</span></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label" id="lbl-invertido"></div>
+        <div class="metric-value" id="val-invertido">—</div>
+        <div class="metric-sub-label" id="lbl-ganancia"></div>
+        <div class="metric-sub-value" id="val-ganancia">—</div>
       </div>
     </div>
-    <div class="card">
-      <p class="section-label" id="lbl-renta-fija"></p>
-      <div class="fondo-unico">
+
+    <div class="two-col">
+      <div class="card">
+        <p class="section-label" id="lbl-evolucion"></p>
+        <div class="line-legend">
+          <div class="line-legend-item">
+            <div class="swatch" style="background:#F5C842"></div>
+            <span id="lbl-legend-total"></span>
+          </div>
+        </div>
+        <div style="position:relative;width:100%;height:200px">
+          <canvas id="lineChart"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <p class="section-label" id="lbl-renta-fija"></p>
         <table class="fund-table" id="tbl-rf"></table>
+        <div class="comment-box" id="comment-rf"></div>
         <div class="rent-highlight">
           <span class="rent-highlight-label" id="lbl-rentabilidad"></span>
           <span class="rent-highlight-val" id="val-rentabilidad">—</span>
@@ -154,62 +162,123 @@
 </footer>
 
 <script>
+// ============================================================
+// CONFIGURACIÓN
+// ============================================================
+const API_URL = 'https://script.google.com/macros/s/AKfycbzRcrvQL7QgF9OizT8WbxSEeOsmjNrU-PyvJXQMP_vpmW4kB6F8eYmMpbh1OKuYCjO76A/exec';
+const INVERSOR_KEY = 'Inversor 17';
+
+// ============================================================
+// TRADUCCIONES
+// ============================================================
 const T = {
   es: {
+    loading: 'Cargando datos...',
+    error: 'No se pudieron cargar los datos. Intentá de nuevo más tarde.',
     resumen: 'Resumen del mes', capital: 'Capital total', cierreAnt: 'Cierre anterior',
     rendMes: 'Rendimientos del mes', invertido: 'Capital invertido', ganancia: 'Ganancia acumulada',
     evolucion: 'Evolución del capital', legendTotal: 'Capital total',
     rentaFija: 'Fondo Renta Fija', rentabilidad: 'Rentabilidad mensual',
     filaCierre: 'Cierre mes anterior', filaRend: 'Rendimientos', filaIng: 'Ingresos',
     filaEgr: 'Egresos', filaCom: 'Comisiones', filaCap: 'Capital actual',
-    meses: { 'mar.-26':'Marzo 2026', 'abr.-26':'Abril 2026', 'may.-26':'Mayo 2026' }
+    meses: {
+      'noviembre 2025':'Noviembre 2025','diciembre 2025':'Diciembre 2025','enero 2026':'Enero 2026',
+      'febrero 2026':'Febrero 2026','marzo 2026':'Marzo 2026','abril 2026':'Abril 2026',
+      'mayo 2026':'Mayo 2026','junio 2026':'Junio 2026'
+    }
   },
   en: {
+    loading: 'Loading data...',
+    error: 'Could not load data. Please try again later.',
     resumen: 'Monthly summary', capital: 'Total capital', cierreAnt: 'Previous close',
     rendMes: 'Monthly returns', invertido: 'Invested capital', ganancia: 'Accumulated gain',
     evolucion: 'Capital evolution', legendTotal: 'Total capital',
     rentaFija: 'Fixed Income Fund', rentabilidad: 'Monthly yield',
     filaCierre: 'Previous close', filaRend: 'Returns', filaIng: 'Deposits',
     filaEgr: 'Withdrawals', filaCom: 'Fees', filaCap: 'Current capital',
-    meses: { 'mar.-26':'March 2026', 'abr.-26':'April 2026', 'may.-26':'May 2026' }
+    meses: {
+      'noviembre 2025':'November 2025','diciembre 2025':'December 2025','enero 2026':'January 2026',
+      'febrero 2026':'February 2026','marzo 2026':'March 2026','abril 2026':'April 2026',
+      'mayo 2026':'May 2026','junio 2026':'June 2026'
+    }
   }
 };
 
-const MONTHS = ['mar.-26', 'abr.-26', 'may.-26'];
-const CAPITAL_INVERTIDO = 6550.00;
-
-const EVOL_ALL = [
-  { mes:'mar.-26', total:6550.00 },
-  { mes:'abr.-26', total:6643.77 },
-  { mes:'may.-26', total:6796.95 }
-];
-
-const DATA = {
-  'mar.-26': {
-    capital:6550.00, rendMes:0, rendPct:'0.00%',
-    cierreAnt:0,
-    rf: { cierreAnt:0, rend:0, ing:6550.00, egr:0, com:0, capital:6550.00, rent:'0.00%' }
-  },
-  'abr.-26': {
-    capital:6643.77, rendMes:93.77, rendPct:'1.43%',
-    cierreAnt:6550.00,
-    rf: { cierreAnt:6550.00, rend:93.77, ing:0, egr:0, com:0, capital:6643.77, rent:'1.43%' }
-  },
-  'may.-26': {
-    capital:6796.95, rendMes:153.18, rendPct:'2.31%',
-    cierreAnt:6643.77,
-    rf: { cierreAnt:6643.77, rend:153.18, ing:0, egr:0, com:0, capital:6796.95, rent:'2.31%' }
-  }
-};
-
+// ============================================================
+// ESTADO GLOBAL
+// ============================================================
 let lang = 'es';
 let lineChart = null;
+let RAW    = null;
+let MONTHS = [];
+let DATA   = {};
+let EVOL   = []; // { mes, total, inv }
 
+// ============================================================
+// HELPERS
+// ============================================================
 function fmt(n) {
-  if (n === null || n === undefined) return '—';
+  if (n === null || n === undefined || isNaN(n)) return '—';
   const abs = Math.abs(n);
   const str = abs.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return (n < 0 ? '-' : '') + 'US$ ' + str;
+}
+
+function parseNum(val) {
+  if (val === null || val === undefined || val === '') return null;
+  if (typeof val === 'number') return val;
+  let s = String(val).trim();
+  if (s === '' || s.startsWith('#')) return null;
+  s = s.replace(/[$%\s]/g, '');
+  const hasComma = s.includes(','), hasDot = s.includes('.');
+  if (hasComma && hasDot) {
+    s = s.lastIndexOf(',') > s.lastIndexOf('.') ? s.replace(/\./g,'').replace(',','.') : s.replace(/,/g,'');
+  } else if (hasComma) {
+    s = s.replace(',', '.');
+  }
+  const num = parseFloat(s);
+  return isNaN(num) ? null : num;
+}
+
+function parsePct(val) { return parseNum(val); }
+
+const MESES_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+function normalizeMonthKey(val) {
+  if (val === null || val === undefined || val === '') return null;
+  if (typeof val === 'string' && /^[a-záéíóú]+\s+\d{4}$/i.test(val.trim())) return val.trim().toLowerCase();
+  const d = new Date(val);
+  if (!isNaN(d.getTime())) return MESES_ES[d.getUTCMonth()] + ' ' + d.getUTCFullYear();
+  return String(val).trim().toLowerCase();
+}
+
+function fmtPct(n) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return n.toFixed(2).replace('.', ',') + '%';
+}
+
+const FULL_TO_ABBR = {
+  'enero':'ene.','febrero':'feb.','marzo':'mar.','abril':'abr.',
+  'mayo':'may.','junio':'jun.','julio':'jul.','agosto':'ago.',
+  'septiembre':'sep.','octubre':'oct.','noviembre':'nov.','diciembre':'dic.'
+};
+function fullMonthToShort(fullMonth) {
+  const parts = fullMonth.split(' ');
+  if (parts.length !== 2) return null;
+  const abbr = FULL_TO_ABBR[parts[0].toLowerCase()];
+  return abbr ? abbr + '-' + parts[1].slice(2) : null;
+}
+
+const ABBR_TO_FULL = {
+  'ene.':'enero','feb.':'febrero','mar.':'marzo','abr.':'abril',
+  'may.':'mayo','jun.':'junio','jul.':'julio','ago.':'agosto',
+  'sep.':'septiembre','oct.':'octubre','nov.':'noviembre','dic.':'diciembre'
+};
+function shortMonthToFull(short) {
+  const parts = short.split('-');
+  if (parts.length !== 2) return null;
+  const nombre = ABBR_TO_FULL[parts[0]];
+  return nombre ? nombre + ' 20' + parts[1] : null;
 }
 
 function setLang(l) {
@@ -218,13 +287,152 @@ function setLang(l) {
   render();
 }
 
+// ============================================================
+// CARGA DE DATOS
+// ============================================================
+async function loadData() {
+  try {
+    const res = await fetch(API_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    RAW = await res.json();
+    processData();
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+    buildMonthOptions();
+    render();
+  } catch (err) {
+    console.error('Error cargando datos:', err);
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error-box').style.display = 'block';
+    document.getElementById('error-box').textContent = T[lang].error;
+  }
+}
+
+function getRows(sheetData) {
+  if (!sheetData || sheetData.length < 2) return [];
+  const header = sheetData[0];
+  return sheetData.slice(1)
+    .filter(r => r[0] === INVERSOR_KEY)
+    .map(r => { const obj = {}; header.forEach((h, i) => obj[h] = r[i]); return obj; });
+}
+
+// ============================================================
+// PROCESAMIENTO DE DATOS
+// ============================================================
+function processData() {
+  const resumenRows = getRows(RAW.resumenGeneral);
+  const rfRows      = getRows(RAW.fondoRentaFija);
+
+  const rfByMonth = {};
+  rfRows.forEach(r => { const k = normalizeMonthKey(r['Mes actual']); if (k) rfByMonth[k] = r; });
+
+  function buildFund(row) {
+    if (!row) return null;
+    return {
+      cierreAnt: parseNum(row['Cierre Mes Ant']),
+      rend:      parseNum(row['Rendimientos mes']),
+      ing:       parseNum(row['Ingresos']),
+      egr:       parseNum(row['Egresos']),
+      com:       parseNum(row['Comisiones']),
+      capital:   parseNum(row['Capital total actual']),
+      rent:      row['Rentabilidad'] ? fmtPct(parsePct(row['Rentabilidad'])) : null,
+      comment:   row['Comentarios'] || null
+    };
+  }
+
+  MONTHS = [];
+  DATA   = {};
+
+  resumenRows.forEach(row => {
+    const month = normalizeMonthKey(row['Mes actual']);
+    if (!month) return;
+    MONTHS.push(month);
+    DATA[month] = {
+      capital:   parseNum(row['Capital total actual']),
+      rendMes:   parseNum(row['Rendimientos mes']),
+      rendPct:   row['Rendimientos %'] ? fmtPct(parsePct(row['Rendimientos %'])) : null,
+      cierreAnt: parseNum(row['Cierre Mes Ant']),
+      invertido: null, // desde evolucionCapitales
+      rf: buildFund(rfByMonth[month]) || emptyFund()
+    };
+  });
+
+  // --- Evolución Capitales (total + invertido para ganancia) ---
+  EVOL = [];
+  const evolData = RAW.evolucionCapitales;
+  if (evolData && evolData.length > 2) {
+    const headerRow0 = evolData[0];
+    let colIdx = -1;
+    for (let i = 0; i < headerRow0.length; i++) {
+      if (headerRow0[i] === INVERSOR_KEY) { colIdx = i; break; }
+    }
+    if (colIdx >= 0) {
+      for (let r = 2; r < evolData.length; r++) {
+        const row   = evolData[r];
+        const mes   = row[0];
+        const total = parseNum(row[colIdx]);
+        const inv   = parseNum(row[colIdx + 1]);
+        if (mes && total !== null) {
+          EVOL.push({ mes, total, inv: inv !== null ? inv : 0 });
+        }
+      }
+      // Cruzar invertido hacia DATA
+      Object.keys(DATA).forEach(month => {
+        const shortKey = fullMonthToShort(month);
+        if (!shortKey) return;
+        const rowIdx = evolData.findIndex(r => r[0] === shortKey);
+        if (rowIdx >= 0) {
+          DATA[month].invertido = parseNum(evolData[rowIdx][colIdx + 1]);
+        }
+      });
+    }
+  }
+
+  // Suplementar MONTHS con meses posteriores al último de Resumen General
+  if (MONTHS.length > 0) {
+    const lastKnown   = MONTHS[MONTHS.length - 1];
+    const lastShort   = fullMonthToShort(lastKnown);
+    const lastEvolIdx = EVOL.findIndex(e => e.mes === lastShort);
+    if (lastEvolIdx >= 0) {
+      EVOL.slice(lastEvolIdx + 1).forEach(e => {
+        const fullMonth = shortMonthToFull(e.mes);
+        if (fullMonth && !MONTHS.includes(fullMonth)) {
+          MONTHS.push(fullMonth);
+          DATA[fullMonth] = {
+            capital: e.total, rendMes: null, rendPct: null,
+            cierreAnt: null, invertido: e.inv,
+            rf: emptyFund()
+          };
+        }
+      });
+    }
+  }
+}
+
+function emptyFund() {
+  return { cierreAnt:null, rend:null, ing:null, egr:null, com:null, capital:null, rent:null, comment:null };
+}
+
+// ============================================================
+// UI BUILDERS
+// ============================================================
+function buildMonthOptions() {
+  const sel     = document.getElementById('month-sel');
+  const t       = T[lang];
+  const current = sel.value || MONTHS[MONTHS.length - 1];
+  sel.innerHTML = MONTHS.map(m =>
+    `<option value="${m}"${m===current?' selected':''}>${t.meses[m] || m}</option>`
+  ).join('');
+}
+
 function buildFundTable(fund, t) {
+  if (!fund) { document.getElementById('tbl-rf').innerHTML = ''; return; }
   const rows = [
     { label: t.filaCierre, val: fmt(fund.cierreAnt), cls: '' },
-    { label: t.filaRend,   val: fmt(fund.rend),      cls: fund.rend >= 0 ? 'pos' : 'neg' },
+    { label: t.filaRend,   val: fmt(fund.rend),      cls: fund.rend !== null ? (fund.rend >= 0 ? 'pos' : 'neg') : '' },
     { label: t.filaIng,    val: fmt(fund.ing),        cls: '' },
-    { label: t.filaEgr,    val: fmt(fund.egr),        cls: '' },
-    { label: t.filaCom,    val: fmt(fund.com),        cls: '' },
+    { label: t.filaEgr,    val: fmt(fund.egr),        cls: fund.egr !== null && fund.egr < 0 ? 'neg' : '' },
+    { label: t.filaCom,    val: fmt(fund.com),        cls: fund.com !== null && fund.com < 0 ? 'neg' : '' },
     { label: t.filaCap,    val: fmt(fund.capital),    cls: 'total' }
   ];
   document.getElementById('tbl-rf').innerHTML =
@@ -233,43 +441,63 @@ function buildFundTable(fund, t) {
     ).join('') + '</tbody>';
 }
 
+// ============================================================
+// RENDER PRINCIPAL
+// ============================================================
 function render() {
+  if (!RAW) return;
   const t = T[lang];
-  const month = document.getElementById('month-sel').value || 'may.-26';
+  const month = document.getElementById('month-sel').value || MONTHS[MONTHS.length - 1];
   const d = DATA[month];
-  const ganancia = d.capital - CAPITAL_INVERTIDO;
+  if (!d) return;
 
-  document.getElementById('month-sel').innerHTML =
-    MONTHS.map(m => `<option value="${m}"${m===month?' selected':''}>${t.meses[m]}</option>`).join('');
+  buildMonthOptions();
 
-  document.getElementById('lbl-resumen').textContent     = t.resumen;
-  document.getElementById('lbl-capital').textContent     = t.capital;
-  document.getElementById('lbl-cierre-ant').textContent  = t.cierreAnt;
-  document.getElementById('lbl-rend-mes').textContent    = t.rendMes;
-  document.getElementById('lbl-invertido').textContent   = t.invertido;
-  document.getElementById('lbl-ganancia').textContent    = t.ganancia;
-  document.getElementById('lbl-evolucion').textContent   = t.evolucion;
-  document.getElementById('lbl-legend-total').textContent= t.legendTotal;
-  document.getElementById('lbl-renta-fija').textContent  = t.rentaFija;
-  document.getElementById('lbl-rentabilidad').textContent= t.rentabilidad;
-  document.getElementById('footer-date').textContent     = t.meses[month];
+  // Labels
+  document.getElementById('lbl-resumen').textContent      = t.resumen;
+  document.getElementById('lbl-capital').textContent      = t.capital;
+  document.getElementById('lbl-cierre-ant').textContent   = t.cierreAnt;
+  document.getElementById('lbl-rend-mes').textContent     = t.rendMes;
+  document.getElementById('lbl-invertido').textContent    = t.invertido;
+  document.getElementById('lbl-ganancia').textContent     = t.ganancia;
+  document.getElementById('lbl-evolucion').textContent    = t.evolucion;
+  document.getElementById('lbl-legend-total').textContent = t.legendTotal;
+  document.getElementById('lbl-renta-fija').textContent   = t.rentaFija;
+  document.getElementById('lbl-rentabilidad').textContent = t.rentabilidad;
+  document.getElementById('footer-date').textContent      = t.meses[month] || month;
 
+  // Valores
   document.getElementById('val-capital').textContent   = fmt(d.capital);
   document.getElementById('val-cierre-ant').textContent= fmt(d.cierreAnt);
   document.getElementById('val-rend-mes').textContent  = fmt(d.rendMes);
-  document.getElementById('val-invertido').textContent = fmt(CAPITAL_INVERTIDO);
-  document.getElementById('val-ganancia').textContent  = fmt(ganancia);
-  document.getElementById('val-rentabilidad').textContent = d.rf.rent;
+  document.getElementById('val-invertido').textContent = fmt(d.invertido);
+
+  const ganancia = (d.capital !== null && d.invertido !== null) ? d.capital - d.invertido : null;
+  document.getElementById('val-ganancia').textContent   = fmt(ganancia);
+  document.getElementById('val-rentabilidad').textContent = d.rf && d.rf.rent ? d.rf.rent : '—';
 
   const badge = document.getElementById('val-rend-pct');
-  badge.textContent = d.rendPct;
-  badge.style.background = d.rendMes >= 0 ? 'var(--dorado)' : '#fde8e8';
-  badge.style.color      = d.rendMes >= 0 ? 'var(--verde2)' : '#c0392b';
+  if (d.rendPct) {
+    badge.textContent = d.rendPct;
+    badge.style.background = d.rendMes >= 0 ? 'var(--dorado)' : '#fde8e8';
+    badge.style.color      = d.rendMes >= 0 ? 'var(--verde2)' : '#c0392b';
+  } else {
+    badge.textContent = '—';
+    badge.style.background = '#eee';
+    badge.style.color = '#999';
+  }
 
+  // Tabla del fondo y comentario
   buildFundTable(d.rf, t);
+  const box = document.getElementById('comment-rf');
+  const comment = d.rf ? d.rf.comment : null;
+  if (comment) { box.style.display = 'block'; box.textContent = comment; }
+  else box.style.display = 'none';
 
-  const monthIdx = EVOL_ALL.findIndex(e => e.mes === month);
-  const evolSlice = EVOL_ALL.slice(0, monthIdx + 1);
+  // Gráfico de líneas — evolución hasta el mes seleccionado
+  const shortMonth = fullMonthToShort(month);
+  const monthIdx   = EVOL.findIndex(e => e.mes === shortMonth);
+  const evolSlice  = monthIdx >= 0 ? EVOL.slice(0, monthIdx + 1) : EVOL;
 
   if (lineChart) lineChart.destroy();
   lineChart = new Chart(document.getElementById('lineChart'), {
@@ -281,7 +509,8 @@ function render() {
         data: evolSlice.map(e => e.total),
         borderColor: '#F5C842', backgroundColor: 'rgba(245,200,66,0.08)',
         borderWidth: 2.5, pointBackgroundColor: '#F5C842',
-        pointBorderColor: '#fff', pointBorderWidth: 2, pointRadius: 5,
+        pointBorderColor: '#fff', pointBorderWidth: 2,
+        pointRadius: evolSlice.length > 12 ? 2 : 4,
         tension: 0.3, fill: true
       }]
     },
@@ -292,20 +521,17 @@ function render() {
         tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + fmt(ctx.parsed.y) } }
       },
       scales: {
-        x: { grid: { display: false }, ticks: { font: { family:'Montserrat', size:10 }, color:'#5a6a5f' } },
-        y: {
-          grid: { color:'rgba(0,0,0,0.05)' },
-          ticks: { font: { family:'Montserrat', size:10 }, color:'#5a6a5f', callback: v => 'US$'+Number(v).toLocaleString('es-AR') },
-          min: 6400
-        }
+        x: { grid: { display: false }, ticks: { font: { family:'Montserrat', size:9 }, color:'#5a6a5f', maxTicksLimit:8 } },
+        y: { grid: { color:'rgba(0,0,0,0.05)' }, ticks: { font: { family:'Montserrat', size:9 }, color:'#5a6a5f', callback: v => 'US$'+Number(v).toLocaleString('es-AR') } }
       }
     }
   });
 }
 
-document.getElementById('month-sel').innerHTML =
-  MONTHS.map((m,i) => `<option value="${m}"${i===MONTHS.length-1?' selected':''}>${T['es'].meses[m]}</option>`).join('');
-render();
+// ============================================================
+// INIT
+// ============================================================
+loadData();
 </script>
 </body>
 </html>
