@@ -353,19 +353,23 @@ function processData() {
   resumenRows.forEach(row => {
     const month = normalizeMonthKey(row['Mes actual']);
     if (!month) return;
+
+    const capital = parseNum(row['Capital total actual']);
+    if (capital === null) return; // fila vacía, sin datos reales aún
+
     MONTHS.push(month);
 
     const cryptoFund = buildFund(cryptoByMonth[month]);
 
     DATA[month] = {
-      capital: parseNum(row['Capital total actual']),
+      capital: capital,
       rendMes: parseNum(row['Rendimientos mes']),
       rendPct: row['Rendimientos %'] ? fmtPct(parseNum(row['Rendimientos %'])) : null,
       ingresos: parseNum(row['Ingresos']),
       egresos: parseNum(row['Egresos']),
       comisiones: parseNum(row['Comisiones']),
       cierreAnt: parseNum(row['Cierre Mes Ant']),
-      crypto: cryptoFund, // null si no hay fila -> banner de "sin datos"
+      crypto: cryptoFund,
       hasDetail: cryptoFund !== null
     };
   });
@@ -376,26 +380,30 @@ function processData() {
     total: DATA[m].capital
   })).filter(e => e.total !== null);
 
-  // Extender con Evolución Capitales si tiene meses más recientes
+  // Extender con Evolución Capitales SOLO con meses posteriores al último de EVOL
   const evolData = RAW.evolucionCapitales;
-  if (evolData && evolData.length > 2) {
+  if (evolData && evolData.length > 2 && EVOL.length > 0) {
     const headerRow0 = evolData[0];
     let colIdx = -1;
     for (let i = 0; i < headerRow0.length; i++) {
-      if (headerRow0[i] === INVERSOR_KEY) { colIdx = i; break; }
+      if (String(headerRow0[i]).trim() === INVERSOR_KEY) { colIdx = i; break; }
     }
     if (colIdx >= 0) {
-      const fullEvol = [];
-      for (let r = 2; r < evolData.length; r++) {
-        const row = evolData[r];
-        const mes = row[0];
-        const total = parseNum(row[colIdx]);
-        if (mes && total !== null) fullEvol.push({ mes, total });
+      const lastShort = EVOL[EVOL.length - 1].mes; // ej: 'may.-26'
+      const lastRowIdx = evolData.findIndex(r => r[0] === lastShort);
+
+      if (lastRowIdx >= 0) {
+        // Recorrer SOLO las filas posteriores a la del último mes ya incluido
+        for (let r = lastRowIdx + 1; r < evolData.length; r++) {
+          const row = evolData[r];
+          const mes = row[0];
+          if (colIdx >= row.length) continue;
+          const total = parseNum(row[colIdx]);
+          if (mes && total !== null) {
+            EVOL.push({ mes, total });
+          }
+        }
       }
-      // Agregar meses de fullEvol que no estén ya en EVOL (más recientes)
-      fullEvol.forEach(e => {
-        if (!EVOL.find(x => x.mes === e.mes)) EVOL.push(e);
-      });
     }
   }
 }
@@ -450,12 +458,7 @@ function render() {
   document.getElementById('footer-date').textContent        = t.meses[month] || month;
 
   const banner = document.getElementById('no-data-banner');
-  if (!d.hasDetail) {
-    banner.style.display = 'block';
-    banner.textContent = t.sinDatos;
-  } else {
-    banner.style.display = 'none';
-  }
+  banner.style.display = 'none';
 
   document.getElementById('val-capital').textContent   = fmt(d.capital);
   document.getElementById('val-cierre-ant').textContent= fmt(d.cierreAnt);
